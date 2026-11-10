@@ -49,8 +49,17 @@ Falls SmartScreen warnt: „Weitere Informationen“ → „Trotzdem ausführen�
 ohne diese ist das Telefon nicht mehr benutzbar bzw. bekommt keine Updates.
 
 ## Was das Skript nicht kann
+- **Netzwerk blocken** – dafür gibt es die Datei `firewall/oppo-blocklist.json` und die App FireWall Blocks
+  (Anleitung im README, Abschnitt „Erweiterte Option").
 - **NextDNS-Liste** (Kapitel 6 im PDF) – läuft im NextDNS-Profil, nicht über adb.
 - **Einstellungen** für Benachrichtigungen/Autostart (Kapitel 4 im PDF) – reine UI-Schalter.
+
+## Wichtig nach der Firewall-Blockade: Updates
+Die Firewall sperrt die OTA-Dienste. Updates laufen deshalb über **OS Updater**
+(https://play.google.com/store/apps/details?id=com.arjanvlek.oxygenupdater):
+App installieren, Kanal *Stable*, Update laden, der Anleitung „Local upgrade" folgen.
+Bricht die Installation ab, in FireWall Blocks `com.oplus.ota` und `com.oplus.romupdate` kurz erlauben,
+erneut installieren, danach wieder sperren.
 
 ## Danach
 Telefon einmal neu starten. **USB-Debugging danach wieder ausschalten** (Entwickleroptionen) –

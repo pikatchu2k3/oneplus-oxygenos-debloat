@@ -12,7 +12,8 @@
 
 A single Windows batch file that **freezes** bloatware, telemetry and unused system apps on OnePlus
 phones instead of uninstalling them. No root, no Shizuku, no Canta, no App Manager — just a USB cable
-and `adb`.
+and `adb` — plus an optional firewall blocklist against trackers and a clear update path via
+**OS Updater**, because the firewall switches the OTA services off.
 
 German version: [README.de.md](README.de.md)
 
@@ -32,7 +33,8 @@ German version: [README.de.md](README.de.md)
 
 - No uninstalling, no data wiping, no deleting of app data
 - No root, no custom ROM, no firmware flashing
-- No DNS blocking (that is a separate NextDNS profile, see `docs/oneplus_cleanup.pdf`)
+- No DNS blocking — use the optional firewall blocklist below, or a NextDNS profile (chapter 6 in
+  `docs/oneplus_cleanup.pdf`)
 - No UI settings (autostart, notifications, battery optimisation) — those are switches inside OxygenOS
 
 ## Requirements
@@ -84,6 +86,46 @@ adb shell pm install-existing <package>     :: brings back something removed wit
 
 A factory reset also restores everything.
 
+## Extended option: network blocking (kill trackers)
+
+Freezing only helps with apps you want gone entirely. Services that have to stay **active** — launcher,
+system UI, camera, security centre — still phone home. That is what the second layer is for: a firewall with
+per-app rules.
+
+- App: **FireWall Blocks** (`com.shayan.firewall`) from IzzyOnDroid — open source, no root, two modes
+  (Shizuku or local VPN): https://apt.izzysoft.de/fdroid/index/apk/com.shayan.firewall
+- Ready-made list: `firewall/oppo-blocklist.json` — 27 OPPO/ColorOS/OnePlus services, Wi-Fi **and** mobile data blocked
+- Readable version incl. “what breaks”: `docs/firewall-blocklist.md`
+
+How to apply:
+
+1. Install FireWall Blocks and pick **Shizuku** mode (lighter than VPN, no permanent VPN key icon).
+2. Import `firewall/oppo-blocklist.json`. Note: importing **replaces** every existing rule in the app.
+3. Flip “Enable” and start Shizuku.
+4. **After every reboot**: start Shizuku and open the app once — otherwise the rules are not active.
+5. Sanity check: browser, messenger and Play Store must keep working; the weather widget stays empty.
+
+The list is a snapshot from a working device. If your model lacks a package, the app silently ignores it.
+Anything not in the list stays allowed — that is the app's default.
+
+## ROM updates: only via OS Updater
+
+The firewall blocks `com.oplus.ota`, `com.oplus.cota` and `com.oplus.romupdate` — exactly the services
+OxygenOS uses to fetch updates. That is intended (no unrequested downloads, no telemetry), but it has a
+consequence: **the update function in settings no longer finds anything.**
+
+Updates therefore go through **OS Updater** (formerly “Oxygen Updater”):
+https://play.google.com/store/apps/details?id=com.arjanvlek.oxygenupdater
+
+1. Install the app. It is open source and the ads can be removed with an in-app purchase.
+2. Check device/region, select the *Stable* channel.
+3. Download the update — the app pulls the official file straight from the vendor and verifies its MD5 sum.
+4. Follow the in-app install guide (“Local upgrade”). The system performs the install; the app cannot flash a ROM.
+5. **If the install fails** (“installation failed”): temporarily allow `com.oplus.ota` and
+   `com.oplus.romupdate` in FireWall Blocks, retry, then block them again.
+
+Security patches ship in the same package and take the same route.
+
 ## Package lists
 
 | Group | Count | Meaning |
@@ -116,6 +158,9 @@ Some packages were deliberately moved to *Optional* after review: `work.clouddpc
 - The `com.android.shell` workaround is unproven on the newest OxygenOS builds
 - Chinese ROMs (ColorOS-based) contain many more packages than the lists here
 - AppOps names can change between Android versions; menu 5 prints only what actually succeeded
+- The firewall list has not been tested on a device: its format and value semantics were verified against the
+  FireWall Blocks source code, the import itself was not
+- The OS Updater route including “Local upgrade” is untested as well
 
 ## Troubleshooting
 
@@ -134,6 +179,9 @@ Some packages were deliberately moved to *Optional* after review: `work.clouddpc
 - `docs/oneplus_cleanup.pdf` — the long German guide: 12 areas from the android-hilfe.de thread, mapped to OxygenOS
 - `docs/canta_kontrolle.pdf` — review of a Canta preset list (which entries would break core features)
 - `docs/expert-review.md` — independent code review (German), including the bugs fixed for v0.9.0
+- `docs/firewall-blocklist.md` — the firewall list explained (German/English), including side effects
+- `firewall/oppo-blocklist.json` — import file for FireWall Blocks
+- `firewall/oppo-blocklist.txt` — the same packages as a plain list to type in by hand
 - `tools/template_bat.txt` — template with `@@SAFE@@` / `@@OPT@@` / `@@NEVER@@` placeholders to rebuild the `.bat`
 
 ## Disclaimer
@@ -147,4 +195,6 @@ know how to reach recovery and have your account credentials at hand.
 Inspired by the android-hilfe.de thread “China-Version Clean Up & Optimize für DAUs”, by
 [Universal Android Debloater](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation)
 (list research only) and by [Canta](https://github.com/samolego/Canta) / App Manager as the Shizuku-based
-alternatives this script replaces.
+alternatives this script replaces. Firewall rules based on
+[FireWall Blocks](https://github.com/shynoiddev/FireWall-Blocks), update path via
+[OS Updater](https://oxygenupdater.com/).

@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.9.1-beta — pre-release
+
+- **New extended option: firewall blocklist.** `firewall/oppo-blocklist.json` (27 OPPO/ColorOS/OnePlus
+  services, Wi-Fi and mobile data) for the open-source app *FireWall Blocks* (`com.shayan.firewall`),
+  importable as JSON. Value semantics verified against the app's source: `true` = blocked.
+- **New: ROM updates via OS Updater** (formerly Oxygen Updater). The blocklist disables the OTA services
+  `com.oplus.ota`, `com.oplus.cota` and `com.oplus.romupdate`, so in-system update checks stop working.
+- Both readmes updated (German and English), new `docs/firewall-blocklist.md` with a per-package table of
+  what stops working, `ANLEITUNG-BAT.txt` extended, repo description updated.
+- Package lists unchanged (71 safe / 23 optional / 9 never-touch).
+
+Still a pre-release: neither the firewall import nor the OS Updater route has been run on a device.
+
 ## v0.9.0-beta — first public pre-release
 
 Initial public version. Windows batch tool, German and English documentation, 71 safe / 23 optional /
