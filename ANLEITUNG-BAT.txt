@@ -1,0 +1,58 @@
+# OnePlus Clean-Up per BAT – kurz erklärt
+
+## Was du brauchst
+1. Windows-PC + USB-Kabel
+2. **Platform-Tools (adb)** von https://developer.android.com/tools/releases/platform-tools
+   ZIP **entpacken**, den Ordner `platform-tools` neben die `.bat` legen.
+   Das Skript findet adb dann selbst (alternativ: adb im PATH oder unter `%LOCALAPPDATA%\Android\Sdk\platform-tools`).
+3. Am Telefon: Einstellungen → Über das Telefon → 7× auf **Build-Nummer** → Entwickleroptionen → **USB-Debugging** an.
+   Kabel anstecken, Popup am Telefon: Haken bei **Immer zulassen** + OK.
+4. Bildschirm entsperrt lassen, Kabel während des Laufs nicht ziehen.
+
+## Starten
+Doppelklick auf `oneplus_cleanup.bat`. Nicht als Administrator nötig.
+Wichtig: die .bat im **entpackten** Ordner starten, nicht direkt aus der ZIP.
+Falls SmartScreen warnt: „Weitere Informationen“ → „Trotzdem ausführen“.
+
+## Das Menü
+- **[1] Übersicht** – zeigt pro Paket, ob es auf dem Telefon ist und ob aktiv oder gesperrt. Ändert nichts.
+  Immer zuerst ausführen.
+- **[2] Sicher** – 71 Pakete: Telemetrie, Werbung, Logs, Konto-Kram, Testtools.
+- **[3] Optional** – zusätzlich 23 Pakete, die Feature oder Geschmackssache sind: Chrome, Fotos, Android Auto,
+  „Hey Google“, eID (Ausweis), **Privater Safe** (Inhalt danach nicht mehr erreichbar), Schrittzähler,
+  Arbeitsprofil/Intune, WLAN-Telefonie-Baustein (uimGbaApp).
+- **[4] Reset** – alles wieder aktivieren, was dieses Skript eingefroren hat. Jederzeit möglich.
+- **[5] App-Ops** – sperrt Hintergrund und Wakelocks von fünf Telemetrie-Diensten (statistics.rom, logkit,
+  onetrace, postmanservice, ocloud). Überlebt Neustart, nichts wird gelöscht. **[6]** setzt es zurück.
+- **[7] Einzeln** – ein Paket einfrieren (`e`) oder freigeben (`f`). Genau `e` oder `f`, alles andere bricht ab.
+  Pakete aus „Sicher“, „Nie anfassen“ und die System-Basis (Launcher, SystemUI, Telefon, Settings) sind gesperrt.
+
+## Was das Skript technisch macht
+- `pm disable-user --user 0 <paket>` = Paket **einfrieren**, nicht deinstallieren.
+  Kein Icon, kein Start, kein Akkuverbrauch – mit Menüpunkt 4 oder 7 sofort wieder aktiv.
+- Der Erfolg wird über `pm list packages -d` geprüft, nicht über die Ausgabe von adb.
+- Pakete, die es auf dem Gerät nicht gibt, werden übersprungen (die Liste ist modellabhängig).
+- Beim Start wird geprüft, ob genau **ein** Gerät hängt; bei „unauthorized“ gibt es einen eigenen Hinweis.
+- Der `com.android.shell`-Trick (kurz deaktivieren, sofort wieder aktivieren) läuft **nur dann**, wenn ein
+  Einfrieren fehlschlägt – OnePlus verweigert sonst das Deaktivieren („not allowed to disable“).
+- Jedes Einfrieren landet in `eingefroren.log`; Reset arbeitet diese Liste mit ab.
+- Ein Werksreset holt ohnehin alles zurück.
+
+## Wichtig: selbst mit Canta deinstallierte Apps
+`pm disable-user` und Canta sind nicht dasselbe. Was du früher mit Canta entfernt hast, ist für dieses Skript
+„nicht auf dem Gerät“. Zurückholen geht per adb:
+`adb shell pm install-existing <paketname>`
+
+## Was NICHT drin ist (bewusst)
+`com.google.android.dialer`, `.contacts`, `.apps.messaging`, `.inputmethod.latin`, `.gm`, `.calendar`,
+`com.oplus.powermonitor`, `com.oplus.sauhelper`, `com.google.android.overlay.modules.healthfitness.forframework` –
+ohne diese ist das Telefon nicht mehr benutzbar bzw. bekommt keine Updates.
+
+## Was das Skript nicht kann
+- **NextDNS-Liste** (Kapitel 6 im PDF) – läuft im NextDNS-Profil, nicht über adb.
+- **Einstellungen** für Benachrichtigungen/Autostart (Kapitel 4 im PDF) – reine UI-Schalter.
+
+## Danach
+Telefon einmal neu starten. **USB-Debugging danach wieder ausschalten** (Entwickleroptionen) –
+sonst darf jeder fremde PC mit Kabel auf das Telefon zugreifen.
+Wenn etwas fehlt: Skript erneut starten, [4] wählen – oder [7] für ein einzelnes Paket.

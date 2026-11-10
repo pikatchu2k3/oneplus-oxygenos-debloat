@@ -1,0 +1,150 @@
+# OnePlus OxygenOS Debloat (ADB)
+
+> ## ⚠️ PRE-RELEASE — v0.9.0-beta
+>
+> This is a **pre-release**. Things can break, and the package lists may not fit every model or region.
+>
+> **It has not been run on a physical OnePlus device yet.** It was verified only in an emulated
+> Windows environment (Wine) against a self-built `adb` stub. Everything it does is reversible,
+> but you are using it at your own risk.
+>
+> Feedback, package names from other OnePlus models and corrections are very welcome — please open an issue.
+
+A single Windows batch file that **freezes** bloatware, telemetry and unused system apps on OnePlus
+phones instead of uninstalling them. No root, no Shizuku, no Canta, no App Manager — just a USB cable
+and `adb`.
+
+German version: [README.de.md](README.de.md)
+
+---
+
+## What it does
+
+- Freezes apps with `pm disable-user --user 0` — the app disappears, consumes no battery, and **nothing is deleted**
+- Three curated lists: **71 safe**, **23 optional** and **9 never-touch** packages
+- Verifies every action through `pm list packages -d` instead of trusting adb output
+- Skips packages that do not exist on your device (lists are model and region dependent)
+- Optional AppOps step: blocks background execution and wake locks of five telemetry services
+- Full rollback at any time (menu 4, or the log file `eingefroren.log`)
+- Logs every freeze so a rollback also covers packages you froze individually
+
+## What it does not do
+
+- No uninstalling, no data wiping, no deleting of app data
+- No root, no custom ROM, no firmware flashing
+- No DNS blocking (that is a separate NextDNS profile, see `docs/oneplus_cleanup.pdf`)
+- No UI settings (autostart, notifications, battery optimisation) — those are switches inside OxygenOS
+
+## Requirements
+
+- Windows 10/11
+- USB cable
+- [Android Platform-Tools](https://developer.android.com/tools/releases/platform-tools) — **unzip** them, keep the
+  `platform-tools` folder next to the `.bat`
+- USB debugging enabled on the phone (Settings → About phone → tap *Build number* 7× → Developer options)
+- Screen unlocked during the run
+
+## Quick start
+
+1. Download this repo (green *Code* button → *Download ZIP*) and **extract** it. Do not run the batch
+   file from inside the ZIP.
+2. Download Platform-Tools, extract them, and put the `platform-tools` folder next to `oneplus_cleanup.bat`.
+3. Connect the phone, allow the *USB debugging* prompt with **Always allow**.
+4. Double-click `oneplus_cleanup.bat`.
+5. Run **1** (overview) first — it changes nothing and shows what your device actually has.
+6. Then run **2** (safe). Reboot once.
+7. When you are done: turn **USB debugging off** again.
+
+## Menu
+
+- **1 — Overview**: per package, whether it exists on the device and whether it is active or frozen. Read-only.
+- **2 — Safe**: freezes the 71 safe packages (telemetry, ads, logs, account scaffolding, test tools).
+- **3 — Optional**: safe list **plus** 23 feature-dependent packages — Chrome, Photos, Android Auto,
+  “Hey Google”, eID, **Private Safe** (contents become unreachable), step counter, work profile/Intune,
+  carrier Wi-Fi calling module.
+- **4 — Reset**: re-enables everything this script froze. Works at any time.
+- **5 — AppOps**: blocks `RUN_ANY_IN_BACKGROUND`, `RUN_IN_BACKGROUND` and `WAKE_LOCK` for
+  `statistics.rom`, `logkit`, `onetrace`, `postmanservice`, `ocloud`. Survives reboots.
+- **6 — AppOps reset**: sets those three ops back to `default`.
+- **7 — Single package**: freeze (`e`) or release (`f`) one package. Packages from the safe/never lists and
+  the system base (launcher, SystemUI, phone, settings) are blocked here on purpose.
+
+## How “freezing” works
+
+```bat
+adb shell pm disable-user --user 0 <package>
+```
+
+The package stays installed but is disabled for the current user. Undo:
+
+```bat
+adb shell pm enable --user 0 <package>      :: what menu 4 does
+adb shell pm install-existing <package>     :: brings back something removed with Canta/ADB
+```
+
+A factory reset also restores everything.
+
+## Package lists
+
+| Group | Count | Meaning |
+|---|---|---|
+| Safe | 71 | Remove without losing a feature |
+| Optional | 23 | Feature or taste — read the description first |
+| Never touch | 9 | Dialer, Contacts, Messages, Gboard, Gmail, Calendar, battery monitor, update service, Health-Connect overlay |
+
+The never-touch group exists because public debloat lists mark several of these as “recommended” —
+on OnePlus that costs you gestures, face unlock, media storage or updates.
+
+Some packages were deliberately moved to *Optional* after review: `work.clouddpc` (school/MDM enrolment),
+`uimGbaApp` (carrier Wi-Fi calling), `healthconnect.controller`, `locationproxy`.
+
+## Safety notes
+
+- **Back up first.** Freezing does not delete app data, but a backup costs five minutes.
+- Private Safe (menu 3) hides your files while frozen — unlock and copy them out first.
+- Do not freeze `com.oplus.sauhelper` or `com.oplus.powermonitor`: no system updates, no battery stats.
+- USB debugging is a real security hole. Turn it off when you are done.
+- One device at a time. The script refuses to run with two devices attached.
+- If a freeze fails, the script briefly disables and re-enables `com.android.shell` — a known OnePlus
+  workaround for “not allowed to disable”. It only happens when a freeze actually fails.
+
+## Known limitations
+
+- Tested on Wine + stub `adb` only, not on real hardware yet
+- Package names differ between models, regions and OxygenOS versions — missing ones are skipped silently
+  (listed as “not on device”)
+- The `com.android.shell` workaround is unproven on the newest OxygenOS builds
+- Chinese ROMs (ColorOS-based) contain many more packages than the lists here
+- AppOps names can change between Android versions; menu 5 prints only what actually succeeded
+
+## Troubleshooting
+
+- **“adb not found”** — Platform-Tools not extracted, or the folder is not next to the `.bat`
+- **“No phone in debug mode”** — cable, USB debugging, or the phone is in charging-only mode (pull down the
+  notification and select *File transfer*)
+- **“Phone connected but not authorised”** — tap *Allow* on the phone, then restart the script
+- **“Phone does not answer / folder read-only”** — script started from inside the ZIP, or screen locked
+- **Freeze fails for a single package** — the package name may not exist on your model; check menu 1
+
+## Repo contents
+
+- `oneplus_cleanup.bat` — the tool (Windows, CRLF)
+- `ANLEITUNG-BAT.txt` — German quick guide
+- `README.de.md` — German readme
+- `docs/oneplus_cleanup.pdf` — the long German guide: 12 areas from the android-hilfe.de thread, mapped to OxygenOS
+- `docs/canta_kontrolle.pdf` — review of a Canta preset list (which entries would break core features)
+- `docs/expert-review.md` — independent code review (German), including the bugs fixed for v0.9.0
+- `tools/template_bat.txt` — template with `@@SAFE@@` / `@@OPT@@` / `@@NEVER@@` placeholders to rebuild the `.bat`
+
+## Disclaimer
+
+No warranty. You modify your own device at your own risk. This project is not affiliated with OnePlus,
+Oppo, Google or with Canta / App Manager / Universal Android Debloater. Keep your phone recoverable:
+know how to reach recovery and have your account credentials at hand.
+
+## Credits
+
+Inspired by the android-hilfe.de thread “China-Version Clean Up & Optimize für DAUs”, by
+[Universal Android Debloater](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation)
+(list research only) and by [Canta](https://github.com/samolego/Canta) / App Manager as the Shizuku-based
+alternatives this script replaces.

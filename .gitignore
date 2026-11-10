@@ -1,0 +1,12 @@
+# Temp files the batch creates next to itself
+opdb_pk.txt
+opdb_pd.txt
+opdb_all.txt
+pkgcheck.txt
+eingefroren.log
+
+# Windows / editor noise
+Thumbs.db
+desktop.ini
+*.swp
+.DS_Store

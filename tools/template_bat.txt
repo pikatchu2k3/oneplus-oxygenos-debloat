@@ -1,0 +1,359 @@
+@echo off
+setlocal EnableDelayedExpansion
+title OnePlus Clean-Up - per ADB
+color 0B
+REM ============================================================
+REM  OnePlus Clean-Up fuer Windows - Ersatz fuer Canta + App Manager
+REM  "einfrieren" = pm disable-user --user 0   (nichts wird geloescht)
+REM  Rueckgaengig: Menuepunkt 4 oder 7.  Hilfe: ANLEITUNG-BAT.txt
+REM ============================================================
+set "SAFE_LIST=@@SAFE@@"
+set "OPT_LIST=@@OPT@@"
+set "NEVER_LIST=@@NEVER@@"
+set "APPOPS_LIST=com.oplus.statistics.rom com.oplus.logkit com.oplus.onetrace com.oplus.postmanservice com.oplus.ocloud"
+set "CRITICAL=com.android.systemui com.android.settings com.android.launcher com.android.launcher3 com.android.phone com.android.shell com.android.packageinstaller com.google.android.packageinstaller"
+
+set "SCRIPT_DIR=%~dp0"
+if exist "!SCRIPT_DIR!platform-tools\adb.exe" set "PATH=!SCRIPT_DIR!platform-tools;!PATH!"
+if exist "!SCRIPT_DIR!platform-tools\adb.bat" set "PATH=!SCRIPT_DIR!platform-tools;!PATH!"
+if exist "%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe" set "PATH=%LOCALAPPDATA%\Android\Sdk\platform-tools;%PATH%"
+where adb >nul 2>nul
+if errorlevel 1 goto :no_adb
+
+set "DEVS="
+set "UNAUTH="
+for /f "skip=1 tokens=1,2" %%a in ('adb devices') do (
+    if /i "%%b"=="device" set "DEVS=!DEVS! %%a"
+    if /i "%%b"=="unauthorized" set "UNAUTH=1"
+)
+if not defined DEVS if defined UNAUTH goto :unauthorized
+if not defined DEVS goto :no_device
+set "DEVARG="
+set /a ND=0
+for %%d in (!DEVS!) do (
+    if not defined DEVARG set "DEVARG=-s %%d"
+    set /a ND+=1
+)
+if !ND! GTR 1 (
+    echo [!] !ND! Telefone/Emulatoren angeschlossen. Bitte nur EIN Geraet anstecken.
+    echo.
+    pause
+    exit /b 1
+)
+for /f "delims=" %%m in ('adb shell getprop ro.product.model 2^>nul') do set "MODEL=%%m"
+for /f "delims=" %%v in ('adb shell getprop ro.build.version.release 2^>nul') do set "AVER=%%v"
+echo [i] Geraet: !MODEL!  (Android !AVER!)
+echo [i] Bildschirm entsperrt lassen, Kabel nicht ziehen.
+
+:menu
+echo.
+echo ============================================================
+echo   OnePlus Clean-Up
+echo ============================================================
+echo   1  UEBERSICHT     Was ist vorhanden/gesperrt (aendert nichts)
+echo   2  SICHER         @@NSAFE@@ Pakete einfrieren
+echo   3  OPTIONAL       plus @@NOPT@@ Pakete (Feature/Geschmackssache)
+echo   4  RESET          alles wieder aktivieren
+echo   5  APP-OPS        Hintergrund der Telemetrie-Dienste sperren
+echo   6  APP-OPS RESET  zuruecksetzen
+echo   7  EINZELN        ein Paket einfrieren/freigeben
+echo   0  Beenden
+echo.
+set "CHOICE="
+set /p "CHOICE=Deine Wahl: "
+if not defined CHOICE goto :menu
+if "%CHOICE%"=="1" goto :overview
+if "%CHOICE%"=="2" goto :safe
+if "%CHOICE%"=="3" goto :optional
+if "%CHOICE%"=="4" goto :reset
+if "%CHOICE%"=="5" goto :appops
+if "%CHOICE%"=="6" goto :appops_off
+if "%CHOICE%"=="7" goto :single
+if "%CHOICE%"=="0" exit /b 0
+echo Unbekannte Auswahl.
+goto :menu
+
+:overview
+cls
+echo UEBERSICHT - es wird nichts veraendert
+call :dump
+if errorlevel 1 goto :menu
+echo.
+echo --- SICHER ---
+for %%p in (%SAFE_LIST%) do call :tag %%p
+echo.
+echo --- OPTIONAL ---
+for %%p in (%OPT_LIST%) do call :tag %%p
+echo.
+echo --- NIE ANFASSEN ---
+for %%p in (%NEVER_LIST%) do call :tag %%p
+echo.
+call :cleanup
+pause
+goto :menu
+
+:safe
+cls
+echo SICHERE LISTE einfrieren
+call :confirm
+if /i not "%GO%"=="j" goto :menu
+echo.
+set /a OK=0
+set /a SKIP=0
+set /a FAIL=0
+call :dump
+if errorlevel 1 goto :menu
+for %%p in (%SAFE_LIST%) do call :freeze %%p
+echo.
+echo Ergebnis: %OK% eingefroren, %SKIP% nicht vorhanden, %FAIL% fehlgeschlagen
+goto :done
+
+:optional
+cls
+echo OPTIONAL - sichere Liste PLUS die @@NOPT@@ optionalen Pakete
+echo Dabei unter anderem: Chrome, Fotos, Android Auto, eID, PRIVATER SAFE
+echo (Inhalt danach nicht mehr erreichbar), Schrittzähler, Arbeitsprofil.
+call :confirm
+if /i not "%GO%"=="j" goto :menu
+echo.
+set /a OK=0
+set /a SKIP=0
+set /a FAIL=0
+call :dump
+if errorlevel 1 goto :menu
+for %%p in (%SAFE_LIST% %OPT_LIST%) do call :freeze %%p
+echo.
+echo Ergebnis: %OK% eingefroren, %SKIP% nicht vorhanden, %FAIL% fehlgeschlagen
+goto :done
+
+:reset
+cls
+echo RESET - alles wieder aktivieren
+echo Betrifft nur Pakete, die dieses Skript eingefroren hat.
+echo Mit Canta deinstallierte Apps holt "pm install-existing" zurueck (siehe Anleitung).
+call :confirm
+if /i not "%GO%"=="j" goto :menu
+echo.
+set /a OK=0
+call :dump
+if errorlevel 1 goto :menu
+for %%p in (%SAFE_LIST% %OPT_LIST%) do call :thaw %%p
+if exist "%~dp0eingefroren.log" (
+    for /f "usebackq delims=" %%p in ("%~dp0eingefroren.log") do call :thaw %%p
+)
+echo.
+echo Ergebnis: %OK% Pakete wieder aktiviert
+del "%~dp0eingefroren.log" >nul 2>nul
+goto :done
+
+:appops
+cls
+echo APP-OPS - Hintergrund und Wakelocks der Telemetrie-Dienste sperren
+echo Kein Deinstallieren, nichts wird geloescht. Mit 6 rueckgaengig.
+call :confirm
+if /i not "%GO%"=="j" goto :menu
+echo.
+for %%p in (%APPOPS_LIST%) do (
+    call :setop %%p RUN_ANY_IN_BACKGROUND ignore
+    call :setop %%p RUN_IN_BACKGROUND ignore
+    call :setop %%p WAKE_LOCK ignore
+)
+goto :done
+
+:appops_off
+cls
+echo APP-OPS zuruecksetzen
+call :confirm
+if /i not "%GO%"=="j" goto :menu
+echo.
+for %%p in (%APPOPS_LIST%) do (
+    call :setop %%p RUN_ANY_IN_BACKGROUND default
+    call :setop %%p RUN_IN_BACKGROUND default
+    call :setop %%p WAKE_LOCK default
+)
+goto :done
+
+:single
+echo.
+echo Nur Paketnamen wie com.heytap.browser eingeben. Alles andere: Menuepunkt 2/3.
+set "PKG="
+set /p "PKG=Paketname: "
+if not defined PKG goto :menu
+set "BAD="
+if not "%PKG%"=="%PKG: =%" set "BAD=1"
+if "%PKG%"=="%PKG:.=%" set "BAD=1"
+if not "%PKG%"=="%PKG:&=%" set "BAD=1"
+if not "%PKG%"=="%PKG:|=%" set "BAD=1"
+if not "%PKG%"=="%PKG:<=%" set "BAD=1"
+if not "%PKG%"=="%PKG:>=%" set "BAD=1"
+if defined BAD (
+    echo [!] Ungueltiger Paketname.
+    pause
+    goto :menu
+)
+for %%n in (%NEVER_LIST% %CRITICAL% %SAFE_LIST%) do (
+    if /i "!PKG!"=="%%n" (
+        echo [!] Dieses Paket ist gesperrt. Bitte Menuepunkt 2 oder 3 benutzen.
+        pause
+        goto :menu
+    )
+)
+set "MODE="
+set /p "MODE=e = einfrieren / f = freigeben: "
+if /i "%MODE%"=="f" (
+    adb %DEVARG% shell pm enable --user 0 !PKG!
+    echo.
+    pause
+    goto :menu
+)
+if /i not "%MODE%"=="e" (
+    echo Abgebrochen, nichts geaendert.
+    pause
+    goto :menu
+)
+call :prep
+adb %DEVARG% shell pm disable-user --user 0 !PKG! >nul 2>nul
+call :isoff !PKG!
+if defined OFF (
+    echo [=] !PKG!
+    echo !PKG!>>"%~dp0eingefroren.log"
+) else (
+    echo [!] Hat nicht geklappt. Paketname richtig? Auf dem Geraet vorhanden?
+)
+echo.
+pause
+goto :menu
+
+:dump
+REM Ausgabe ueber for /f einsammeln: "adb ... > datei" verliert unter Umstaenden
+REM die Ausgabe, und zwei Umleitungen hintereinander verschlucken den zweiten Befehl.
+del "%~dp0opdb_pk.txt" "%~dp0opdb_pd.txt" >nul 2>nul
+for /f "delims=" %%r in ('adb %DEVARG% shell pm list packages') do >>"%~dp0opdb_pk.txt" echo %%r
+set "ANDROIDOK="
+for /f "usebackq delims=" %%r in ("%~dp0opdb_pk.txt") do if /i "%%r"=="package:android" set "ANDROIDOK=1"
+if not defined ANDROIDOK (
+    echo [!] Das Telefon antwortet nicht oder der Ordner ist schreibgeschuetzt.
+    echo     - Bildschirm entsperrt? Kabel fest? Skript aus der ZIP entpackt?
+    echo.
+    pause
+    exit /b 1
+)
+for /f "delims=" %%r in ('adb %DEVARG% shell pm list packages -d') do >>"%~dp0opdb_pd.txt" echo %%r
+exit /b 0
+
+:tag
+set "FOUND="
+for /f "usebackq delims=" %%r in ("%~dp0opdb_pk.txt") do if /i "%%r"=="package:%~1" set "FOUND=1"
+if not defined FOUND (
+    echo   %~1  [nicht auf dem Geraet]
+    exit /b 0
+)
+set "FOUND="
+for /f "usebackq delims=" %%r in ("%~dp0opdb_pd.txt") do if /i "%%r"=="package:%~1" set "FOUND=1"
+if defined FOUND (
+    echo   %~1  [gesperrt/aus]
+) else (
+    echo   %~1  [aktiv]
+)
+exit /b 0
+
+:freeze
+set "FOUND="
+for /f "usebackq delims=" %%r in ("%~dp0opdb_pk.txt") do if /i "%%r"=="package:%~1" set "FOUND=1"
+if not defined FOUND (
+    set /a SKIP+=1
+    exit /b 0
+)
+adb %DEVARG% shell pm disable-user --user 0 %~1 >nul 2>nul
+call :isoff %~1
+if not defined OFF (
+    call :prep
+    adb %DEVARG% shell pm disable-user --user 0 %~1 >nul 2>nul
+    call :isoff %~1
+)
+if defined OFF (
+    echo   [=] %~1
+    echo %~1>>"%~dp0eingefroren.log"
+    set /a OK+=1
+) else (
+    echo   [X] %~1   konnte nicht deaktiviert werden
+    set /a FAIL+=1
+)
+exit /b 0
+
+:isoff
+REM Status ueber "pm list packages -d" pruefen statt die Ausgabe von disable-user zu parsen
+set "OFF="
+for /f "delims=" %%r in ('adb %DEVARG% shell pm list packages -d') do (
+    if /i "%%r"=="package:%~1" set "OFF=1"
+)
+exit /b 0
+
+:thaw
+call :isoff %~1
+if not defined OFF exit /b 0
+adb %DEVARG% shell pm enable --user 0 %~1 >nul 2>nul
+call :isoff %~1
+if defined OFF exit /b 0
+echo   [+] %~1
+set /a OK+=1
+exit /b 0
+
+:setop
+adb %DEVARG% shell cmd appops set %~1 %~2 %~3 >nul 2>nul
+if not errorlevel 1 echo   [op] %~1 %~2 = %~3
+exit /b 0
+
+:prep
+REM OnePlus verweigert ohne diesen Trick das Deaktivieren ("not allowed to disable").
+REM Nur bei Bedarf: nie fuer die Uebersicht, und nur wenn ein Einfrieren scheitert.
+if defined PREPDONE exit /b 0
+set "PREPDONE=1"
+adb %DEVARG% shell pm disable-user --user 0 com.android.shell >nul 2>nul
+adb %DEVARG% shell pm enable --user 0 com.android.shell >nul 2>nul
+exit /b 0
+
+:confirm
+echo.
+set "GO="
+set /p "GO=Weiter? (j/n): "
+if /i "%GO%"=="j" exit /b 0
+echo Abgebrochen.
+exit /b 0
+
+:cleanup
+del "%~dp0opdb_pk.txt" "%~dp0opdb_pd.txt" >nul 2>nul
+exit /b 0
+
+:done
+call :cleanup
+echo.
+echo Empfehlung: Telefon einmal neu starten.
+echo Danach USB-Debugging in den Entwickleroptionen wieder ausschalten.
+echo.
+pause
+goto :menu
+
+:no_adb
+echo [!] adb nicht gefunden.
+echo     Platform-Tools entpacken, Ordner "platform-tools" neben diese .bat legen.
+echo     https://developer.android.com/tools/releases/platform-tools
+echo     Tipp: Erst die ZIP entpacken, dann die .bat im entpackten Ordner starten.
+echo.
+pause
+exit /b 1
+
+:no_device
+echo [!] Kein Telefon im Debug-Modus verbunden.
+echo     Kabel dran, USB-Debugging an, Popup am Telefon "Immer zulassen" + OK.
+echo.
+pause
+exit /b 1
+
+:unauthorized
+echo [!] Telefon ist angeschlossen, aber noch nicht freigegeben.
+echo     Auf dem Bildschirm: "USB-Debugging zulassen?" - Haken "Immer zulassen" + OK.
+echo     Danach das Skript neu starten.
+echo.
+pause
+exit /b 1
