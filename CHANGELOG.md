@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.9.2-beta — pre-release
 
 - **Menu 2 and 3: pick your own packages.** Before freezing, choose `a` (all, as before) or `w` (choose):
   every package that exists and is still active is asked one by one (`j`/`n`, `a` = rest of the group,
@@ -10,6 +10,10 @@
   skipped entirely. New `?word` search over installed packages (frozen ones marked `[aus]`), status display
   before acting, and the prompt stays open for several packages. Never-touch and system-base packages can
   still not be frozen, but can now be released here.
+- Tested in Wine against an `adb` stub, not yet on a device.
+
+## v0.9.3-beta — pre-release
+
 - **New menu 8: status check.** Read-only: shows for each AppOp of menu 5 whether it is still blocked or was
   reset (e.g. by a system update) and which packages from `eingefroren.log` are active again, so you no longer
   have to re-run everything blindly.
