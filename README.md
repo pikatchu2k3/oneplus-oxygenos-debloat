@@ -64,12 +64,18 @@ German version: [README.de.md](README.de.md)
 - **3 — Optional**: safe list **plus** 23 feature-dependent packages — Chrome, Photos, Android Auto,
   “Hey Google”, eID, **Private Safe** (contents become unreachable), step counter, work profile/Intune,
   carrier Wi-Fi calling module.
+- **Pick your own in 2 and 3**: before starting, the script asks `a` = all or `w` = choose. With `w`, every
+  package that exists on the device and is still active is asked one by one: `j` freeze, `n` skip,
+  `a` = rest of the group, `k` = skip the rest of the group. In menu 3 the safe and the optional list are chosen
+  separately (all / choose / `k` = none) — e.g. only a few optional packages.
 - **4 — Reset**: re-enables everything this script froze. Works at any time.
 - **5 — AppOps**: blocks `RUN_ANY_IN_BACKGROUND`, `RUN_IN_BACKGROUND` and `WAKE_LOCK` for
   `statistics.rom`, `logkit`, `onetrace`, `postmanservice`, `ocloud`. Survives reboots.
 - **6 — AppOps reset**: sets those three ops back to `default`.
-- **7 — Single package**: freeze (`e`) or release (`f`) one package. Packages from the safe/never lists and
-  the system base (launcher, SystemUI, phone, settings) are blocked here on purpose.
+- **7 — Single**: freeze (`e`) or release (`f`) **any** app or service, including packages from the safe/optional
+  lists — this lets you skip 2 and 3 entirely. `?word` searches installed packages (e.g. `?heytap`; a bare `?`
+  lists all, `[aus]` = frozen). The prompt stays open until you press Enter on an empty line. Only the system
+  base (launcher, SystemUI, phone, settings) and the never-touch list cannot be frozen here, but they can be released.
 
 ## How “freezing” works
 

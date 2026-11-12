@@ -64,12 +64,19 @@ English version: [README.md](README.md)
 - **3 — Optional**: sichere Liste **plus** 23 feature-abhängige Pakete — Chrome, Fotos, Android Auto,
   „Hey Google“, eID, **Privater Safe** (Inhalt danach nicht mehr erreichbar), Schrittzähler,
   Arbeitsprofil/Intune, WLAN-Telefonie-Baustein.
+- **Bei 2 und 3 selbst auswählen**: vor dem Start fragt das Skript `a` = alle oder `w` = selbst auswählen.
+  Bei `w` wird jedes Paket, das auf dem Gerät ist und noch läuft, einzeln abgefragt: `j` einfrieren, `n` auslassen,
+  `a` = Rest der Gruppe komplett, `k` = Rest der Gruppe auslassen. Bei 3 lassen sich die sichere und die
+  optionale Liste getrennt wählen (alle / selbst auswählen / `k` = keins) — z. B. nur einzelne optionale Pakete.
 - **4 — Reset**: aktiviert alles wieder, was dieses Skript eingefroren hat. Jederzeit möglich.
 - **5 — App-Ops**: sperrt `RUN_ANY_IN_BACKGROUND`, `RUN_IN_BACKGROUND` und `WAKE_LOCK` für
   `statistics.rom`, `logkit`, `onetrace`, `postmanservice`, `ocloud`. Überlebt Neustarts.
 - **6 — App-Ops Reset**: setzt diese drei Ops auf `default` zurück.
-- **7 — Einzelnes Paket**: einfrieren (`e`) oder freigeben (`f`). Pakete aus den Listen und die System-Basis
-  (Launcher, SystemUI, Telefon, Einstellungen) sind hier absichtlich gesperrt.
+- **7 — Einzeln**: **beliebige** Apps und Dienste einfrieren (`e`) oder freigeben (`f`), auch Pakete aus der
+  sicheren/optionalen Liste — damit lassen sich 2 und 3 komplett umgehen. Mit `?wort` sucht man installierte
+  Pakete (z. B. `?heytap`, nur `?` listet alle, `[aus]` = eingefroren). Das Menü bleibt offen, bis man Enter
+  ohne Eingabe drückt. Nur die System-Basis (Launcher, SystemUI, Telefon, Einstellungen) und die
+  „Nie anfassen“-Liste lassen sich hier nicht einfrieren, wohl aber freigeben.
 
 ## Wie „einfrieren“ funktioniert
 

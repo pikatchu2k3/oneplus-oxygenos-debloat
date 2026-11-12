@@ -51,12 +51,12 @@ echo ============================================================
 echo   OnePlus Clean-Up
 echo ============================================================
 echo   1  UEBERSICHT     Was ist vorhanden/gesperrt (aendert nichts)
-echo   2  SICHER         @@NSAFE@@ Pakete einfrieren
-echo   3  OPTIONAL       plus @@NOPT@@ Pakete (Feature/Geschmackssache)
+echo   2  SICHER         @@NSAFE@@ Pakete einfrieren (alle oder selbst auswaehlen)
+echo   3  OPTIONAL       plus @@NOPT@@ Pakete (alle oder selbst auswaehlen)
 echo   4  RESET          alles wieder aktivieren
 echo   5  APP-OPS        Hintergrund der Telemetrie-Dienste sperren
 echo   6  APP-OPS RESET  zuruecksetzen
-echo   7  EINZELN        ein Paket einfrieren/freigeben
+echo   7  EINZELN        beliebige Pakete suchen, einfrieren, freigeben
 echo   0  Beenden
 echo.
 set "CHOICE="
@@ -94,36 +94,56 @@ goto :menu
 
 :safe
 cls
-echo SICHERE LISTE einfrieren
-call :confirm
-if /i not "%GO%"=="j" goto :menu
+echo SICHERE LISTE einfrieren (@@NSAFE@@ Pakete)
+echo Bei "w" wird jedes vorhandene, noch aktive Paket einzeln abgefragt.
+call :askmode "Sichere Liste" nok
+if not defined SELMODE goto :menu
+set "SELSAFE=!SELMODE!"
 echo.
 set /a OK=0
 set /a SKIP=0
 set /a FAIL=0
+set /a NO=0
 call :dump
 if errorlevel 1 goto :menu
-for %%p in (%SAFE_LIST%) do call :freeze %%p
+set "SELMODE=!SELSAFE!"
+for %%p in (%SAFE_LIST%) do call :pick %%p
 echo.
-echo Ergebnis: %OK% eingefroren, %SKIP% nicht vorhanden, %FAIL% fehlgeschlagen
+echo Ergebnis: %OK% eingefroren, %NO% abgewaehlt, %SKIP% nicht vorhanden, %FAIL% fehlgeschlagen
 goto :done
 
 :optional
 cls
 echo OPTIONAL - sichere Liste PLUS die @@NOPT@@ optionalen Pakete
 echo Dabei unter anderem: Chrome, Fotos, Android Auto, eID, PRIVATER SAFE
-echo (Inhalt danach nicht mehr erreichbar), Schrittzähler, Arbeitsprofil.
-call :confirm
-if /i not "%GO%"=="j" goto :menu
+echo (Inhalt danach nicht mehr erreichbar), Schrittzaehler, Arbeitsprofil.
+echo Beide Gruppen lassen sich getrennt waehlen: alle, selbst auswaehlen oder keins.
+call :askmode "Sichere Liste (@@NSAFE@@)" k
+if not defined SELMODE goto :menu
+set "SELSAFE=!SELMODE!"
+call :askmode "Optionale Liste (@@NOPT@@)" k
+if not defined SELMODE goto :menu
+set "SELOPT=!SELMODE!"
+if /i "!SELSAFE!!SELOPT!"=="kk" (
+    echo Nichts ausgewaehlt, nichts geaendert.
+    pause
+    goto :menu
+)
 echo.
 set /a OK=0
 set /a SKIP=0
 set /a FAIL=0
+set /a NO=0
 call :dump
 if errorlevel 1 goto :menu
-for %%p in (%SAFE_LIST% %OPT_LIST%) do call :freeze %%p
+if /i not "!SELSAFE!"=="k" echo --- SICHER ---
+set "SELMODE=!SELSAFE!"
+for %%p in (%SAFE_LIST%) do call :pick %%p
+if /i not "!SELOPT!"=="k" echo --- OPTIONAL ---
+set "SELMODE=!SELOPT!"
+for %%p in (%OPT_LIST%) do call :pick %%p
 echo.
-echo Ergebnis: %OK% eingefroren, %SKIP% nicht vorhanden, %FAIL% fehlgeschlagen
+echo Ergebnis: %OK% eingefroren, %NO% abgewaehlt, %SKIP% nicht vorhanden, %FAIL% fehlgeschlagen
 goto :done
 
 :reset
@@ -174,42 +194,62 @@ for %%p in (%APPOPS_LIST%) do (
 goto :done
 
 :single
+cls
+echo EINZELN - beliebige Pakete einfrieren oder freigeben
+echo   Paketname eingeben, z.B. com.heytap.browser
+echo   ?wort  = installierte Pakete suchen, z.B. ?heytap  (nur ? = alle)
+echo   Enter ohne Eingabe = zurueck zum Menue
+echo   System-Basis und "Nie anfassen"-Liste: nur Freigeben moeglich, kein Einfrieren.
+echo   Alles hier Eingefrorene holt Menuepunkt 4 wieder zurueck.
+:single_loop
 echo.
-echo Nur Paketnamen wie com.heytap.browser eingeben. Alles andere: Menuepunkt 2/3.
 set "PKG="
-set /p "PKG=Paketname: "
+set /p "PKG=Paketname oder ?suche: "
 if not defined PKG goto :menu
 set "BAD="
 if not "%PKG%"=="%PKG: =%" set "BAD=1"
-if "%PKG%"=="%PKG:.=%" set "BAD=1"
 if not "%PKG%"=="%PKG:&=%" set "BAD=1"
 if not "%PKG%"=="%PKG:|=%" set "BAD=1"
 if not "%PKG%"=="%PKG:<=%" set "BAD=1"
 if not "%PKG%"=="%PKG:>=%" set "BAD=1"
 if defined BAD (
-    echo [!] Ungueltiger Paketname.
-    pause
-    goto :menu
+    echo [x] Ungueltige Eingabe.
+    goto :single_loop
 )
-for %%n in (%NEVER_LIST% %CRITICAL% %SAFE_LIST%) do (
-    if /i "!PKG!"=="%%n" (
-        echo [!] Dieses Paket ist gesperrt. Bitte Menuepunkt 2 oder 3 benutzen.
-        pause
-        goto :menu
-    )
+if "%PKG:~0,1%"=="?" goto :single_search
+if "%PKG%"=="%PKG:.=%" (
+    echo [x] Ungueltiger Paketname - er enthaelt immer Punkte, z.B. com.heytap.browser
+    goto :single_loop
 )
+set "LOCKED="
+for %%n in (%NEVER_LIST% %CRITICAL%) do if /i "%PKG%"=="%%n" set "LOCKED=1"
+call :pkgstate %PKG%
+if "%STATE%"=="fehlt" (
+    echo [x] %PKG% ist nicht auf dem Geraet. Tipp: mit ?teil suchen.
+    goto :single_loop
+)
+echo     Status: %STATE%
 set "MODE="
-set /p "MODE=e = einfrieren / f = freigeben: "
+if defined LOCKED (
+    echo     Gesperrt ^(System-Basis bzw. "Nie anfassen"^): nur Freigeben moeglich.
+    set /p "MODE=f = freigeben / Enter = nichts: "
+) else (
+    set /p "MODE=e = einfrieren / f = freigeben / Enter = nichts: "
+)
+if defined LOCKED if /i "%MODE%"=="e" set "MODE="
 if /i "%MODE%"=="f" (
-    adb %DEVARG% shell pm enable --user 0 !PKG!
-    echo.
-    pause
-    goto :menu
+    adb %DEVARG% shell pm enable --user 0 !PKG! >nul 2>nul
+    call :isoff !PKG!
+    if defined OFF (
+        echo [x] Freigeben hat nicht geklappt.
+    ) else (
+        echo [+] !PKG!
+    )
+    goto :single_loop
 )
 if /i not "%MODE%"=="e" (
-    echo Abgebrochen, nichts geaendert.
-    pause
-    goto :menu
+    echo Nichts geaendert.
+    goto :single_loop
 )
 call :prep
 adb %DEVARG% shell pm disable-user --user 0 !PKG! >nul 2>nul
@@ -218,11 +258,98 @@ if defined OFF (
     echo [=] !PKG!
     echo !PKG!>>"%~dp0eingefroren.log"
 ) else (
-    echo [!] Hat nicht geklappt. Paketname richtig? Auf dem Geraet vorhanden?
+    echo [x] Hat nicht geklappt. Manche Systempakete laesst Android nicht deaktivieren.
 )
+goto :single_loop
+
+:single_search
+set "FILTER=%PKG:~1%"
 echo.
-pause
-goto :menu
+echo Gefundene Pakete ([aus] = eingefroren):
+set /a HITS=0
+del "%~dp0opdb_sd.txt" >nul 2>nul
+for /f "delims=" %%r in ('adb %DEVARG% shell pm list packages -d !FILTER!') do >>"%~dp0opdb_sd.txt" echo %%r
+for /f "tokens=2 delims=:" %%r in ('adb %DEVARG% shell pm list packages !FILTER!') do (
+    set /a HITS+=1
+    set "MARK="
+    if exist "%~dp0opdb_sd.txt" for /f "usebackq delims=" %%d in ("%~dp0opdb_sd.txt") do if /i "%%d"=="package:%%r" set "MARK=[aus]"
+    echo   %%r  !MARK!
+)
+del "%~dp0opdb_sd.txt" >nul 2>nul
+echo   (!HITS! Treffer)
+goto :single_loop
+
+:pkgstate
+REM setzt STATE auf fehlt / aktiv / eingefroren (direkt am Geraet abgefragt)
+set "STATE=fehlt"
+for /f "delims=" %%r in ('adb %DEVARG% shell pm list packages %~1') do (
+    if /i "%%r"=="package:%~1" set "STATE=aktiv"
+)
+if "%STATE%"=="fehlt" exit /b 0
+call :isoff %~1
+if defined OFF set "STATE=eingefroren"
+exit /b 0
+
+:askmode
+REM %1 = Gruppenname, %2 = k (Option "keins" anbieten) oder nok
+REM setzt SELMODE auf a / w / k, leer = Abbruch
+set "SELMODE="
+echo.
+echo %~1:
+echo     a = alle einfrieren
+echo     w = selbst auswaehlen (jedes Paket einzeln j/n)
+if /i "%~2"=="k" echo     k = keins aus dieser Gruppe
+echo     Enter = abbrechen
+set "ANS="
+set /p "ANS=Auswahl: "
+if /i "%ANS%"=="a" set "SELMODE=a"
+if /i "%ANS%"=="w" set "SELMODE=w"
+if /i "%~2"=="k" if /i "%ANS%"=="k" set "SELMODE=k"
+if not defined SELMODE echo Abgebrochen, nichts geaendert.
+if not defined SELMODE pause
+exit /b 0
+
+:pick
+REM je nach SELMODE: a = einfrieren, k = auslassen, w = nachfragen
+if /i "%SELMODE%"=="k" exit /b 0
+if /i "%SELMODE%"=="a" (
+    call :freeze %~1
+    exit /b 0
+)
+set "FOUND="
+for /f "usebackq delims=" %%r in ("%~dp0opdb_pk.txt") do if /i "%%r"=="package:%~1" set "FOUND=1"
+if not defined FOUND (
+    set /a SKIP+=1
+    exit /b 0
+)
+set "FOUND="
+for /f "usebackq delims=" %%r in ("%~dp0opdb_pd.txt") do if /i "%%r"=="package:%~1" set "FOUND=1"
+if defined FOUND (
+    echo   [-] %~1   schon aus
+    exit /b 0
+)
+:pick_ask
+set "ANS="
+set /p "ANS=  %~1  einfrieren? (j/n, a=Rest der Gruppe alle, k=Rest keins): "
+if /i "%ANS%"=="j" (
+    call :freeze %~1
+    exit /b 0
+)
+if /i "%ANS%"=="n" (
+    set /a NO+=1
+    exit /b 0
+)
+if /i "%ANS%"=="a" (
+    set "SELMODE=a"
+    call :freeze %~1
+    exit /b 0
+)
+if /i "%ANS%"=="k" (
+    set "SELMODE=k"
+    set /a NO+=1
+    exit /b 0
+)
+goto :pick_ask
 
 :dump
 REM Ausgabe ueber for /f einsammeln: "adb ... > datei" verliert unter Umstaenden
