@@ -72,6 +72,9 @@ English version: [README.md](README.md)
 - **5 — App-Ops**: sperrt `RUN_ANY_IN_BACKGROUND`, `RUN_IN_BACKGROUND` und `WAKE_LOCK` für
   `statistics.rom`, `logkit`, `onetrace`, `postmanservice`, `ocloud`. Überlebt Neustarts.
 - **6 — App-Ops Reset**: setzt diese drei Ops auf `default` zurück.
+- **8 — Status**: Kontrolle nach einem System-Update, ändert nichts. Zeigt je App-Op, ob es noch gesperrt (`[ok]`)
+  oder wieder erlaubt (`[OFFEN]`) ist, und welche Pakete aus `eingefroren.log` wieder aktiv sind. Bei Abweichungen
+  einfach 5 bzw. 2/3/7 erneut ausführen.
 - **7 — Einzeln**: **beliebige** Apps und Dienste einfrieren (`e`) oder freigeben (`f`), auch Pakete aus der
   sicheren/optionalen Liste — damit lassen sich 2 und 3 komplett umgehen. Mit `?wort` sucht man installierte
   Pakete (z. B. `?heytap`, nur `?` listet alle, `[aus]` = eingefroren). Das Menü bleibt offen, bis man Enter

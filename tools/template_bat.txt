@@ -57,6 +57,7 @@ echo   4  RESET          alles wieder aktivieren
 echo   5  APP-OPS        Hintergrund der Telemetrie-Dienste sperren
 echo   6  APP-OPS RESET  zuruecksetzen
 echo   7  EINZELN        beliebige Pakete suchen, einfrieren, freigeben
+echo   8  STATUS         Kontrolle nach Update: App-Ops + Einfrier-Log (aendert nichts)
 echo   0  Beenden
 echo.
 set "CHOICE="
@@ -69,6 +70,7 @@ if "%CHOICE%"=="4" goto :reset
 if "%CHOICE%"=="5" goto :appops
 if "%CHOICE%"=="6" goto :appops_off
 if "%CHOICE%"=="7" goto :single
+if "%CHOICE%"=="8" goto :status
 if "%CHOICE%"=="0" exit /b 0
 echo Unbekannte Auswahl.
 goto :menu
@@ -179,6 +181,67 @@ for %%p in (%APPOPS_LIST%) do (
     call :setop %%p WAKE_LOCK ignore
 )
 goto :done
+
+:status
+cls
+echo STATUS - aendert nichts. Nach einem System-Update hier pruefen, ob alles noch aus ist.
+call :dump
+if errorlevel 1 goto :menu
+echo.
+echo --- APP-OPS (Menue 5) ---   [ok] = gesperrt, [OFFEN] = wieder erlaubt
+set /a SOK=0
+set /a SOPEN=0
+for %%p in (%APPOPS_LIST%) do (
+    for %%o in (RUN_ANY_IN_BACKGROUND RUN_IN_BACKGROUND WAKE_LOCK) do call :getop %%p %%o
+)
+echo   %SOK% gesperrt, %SOPEN% offen
+echo.
+echo --- EINGEFROREN (Log eingefroren.log + Menue 2/3) ---
+set /a LOK=0
+set /a LBACK=0
+set "SEEN= "
+if exist "%~dp0eingefroren.log" (
+    for /f "usebackq delims=" %%p in ("%~dp0eingefroren.log") do call :chkfrozen %%p
+)
+if "%LOK%%LBACK%"=="00" echo   Kein Log vorhanden - dann zeigt Menue 1 den Stand der Listen.
+echo   %LOK% weiter eingefroren, %LBACK% wieder aktiv
+if %SOPEN% GTR 0 echo   Tipp: Menue 5 erneut ausfuehren.
+if %LBACK% GTR 0 echo   Tipp: Menue 2/3 bzw. 7 erneut ausfuehren - Details: Menue 1.
+call :cleanup
+pause
+goto :menu
+
+:getop
+set "OPL="
+for /f "delims=" %%r in ('adb %DEVARG% shell cmd appops get %~1 %~2 2^>nul') do if not defined OPL set "OPL=%%r"
+if not defined OPL (
+    echo   %~1  %~2  [nicht auf dem Geraet]
+    exit /b 0
+)
+if not "!OPL:ignore=!"=="!OPL!" (
+    echo   %~1  %~2  [ok]
+    set /a SOK+=1
+) else (
+    echo   %~1  %~2  [OFFEN]
+    set /a SOPEN+=1
+)
+exit /b 0
+
+:chkfrozen
+if not "!SEEN: %~1 =!"=="!SEEN!" exit /b 0
+set "SEEN=!SEEN!%~1 "
+set "FOUND="
+for /f "usebackq delims=" %%r in ("%~dp0opdb_pk.txt") do if /i "%%r"=="package:%~1" set "FOUND=1"
+if not defined FOUND exit /b 0
+set "FOUND="
+for /f "usebackq delims=" %%r in ("%~dp0opdb_pd.txt") do if /i "%%r"=="package:%~1" set "FOUND=1"
+if defined FOUND (
+    set /a LOK+=1
+) else (
+    echo   %~1  [WIEDER AKTIV]
+    set /a LBACK+=1
+)
+exit /b 0
 
 :appops_off
 cls
