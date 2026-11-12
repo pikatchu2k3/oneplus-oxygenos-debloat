@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- **Menu 2 and 3: pick your own packages.** Before freezing, choose `a` (all, as before) or `w` (choose):
+  every package that exists and is still active is asked one by one (`j`/`n`, `a` = rest of the group,
+  `k` = skip the rest). Menu 3 asks for the safe and the optional list separately, each with all / choose / none,
+  so e.g. only optional packages can be frozen. The result line now also counts deselected packages.
+- **Menu 7: any package.** Packages from the safe and optional lists are no longer blocked, so 2/3 can be
+  skipped entirely. New `?word` search over installed packages (frozen ones marked `[aus]`), status display
+  before acting, and the prompt stays open for several packages. Never-touch and system-base packages can
+  still not be frozen, but can now be released here.
+- Tested in Wine against an `adb` stub, not yet on a device.
+
 ## v0.9.1-beta — pre-release
 
 - **New extended option: firewall blocklist.** `firewall/oppo-blocklist.json` (27 OPPO/ColorOS/OnePlus

@@ -21,11 +21,17 @@ Falls SmartScreen warnt: „Weitere Informationen“ → „Trotzdem ausführen�
 - **[3] Optional** – zusätzlich 23 Pakete, die Feature oder Geschmackssache sind: Chrome, Fotos, Android Auto,
   „Hey Google“, eID (Ausweis), **Privater Safe** (Inhalt danach nicht mehr erreichbar), Schrittzähler,
   Arbeitsprofil/Intune, WLAN-Telefonie-Baustein (uimGbaApp).
+- **Selbst auswählen bei [2] und [3]** – vor dem Start: `a` = alle, `w` = selbst auswählen.
+  Bei `w` kommt jedes vorhandene, noch aktive Paket einzeln: `j` = einfrieren, `n` = auslassen,
+  `a` = Rest der Gruppe alle, `k` = Rest der Gruppe keins. Bei [3] werden sichere und optionale Liste
+  getrennt gefragt, dort gibt es zusätzlich `k` = keins aus dieser Gruppe.
 - **[4] Reset** – alles wieder aktivieren, was dieses Skript eingefroren hat. Jederzeit möglich.
 - **[5] App-Ops** – sperrt Hintergrund und Wakelocks von fünf Telemetrie-Diensten (statistics.rom, logkit,
   onetrace, postmanservice, ocloud). Überlebt Neustart, nichts wird gelöscht. **[6]** setzt es zurück.
-- **[7] Einzeln** – ein Paket einfrieren (`e`) oder freigeben (`f`). Genau `e` oder `f`, alles andere bricht ab.
-  Pakete aus „Sicher“, „Nie anfassen“ und die System-Basis (Launcher, SystemUI, Telefon, Settings) sind gesperrt.
+- **[7] Einzeln** – beliebige Apps/Dienste nach Wunsch einfrieren (`e`) oder freigeben (`f`), auch Pakete aus
+  „Sicher“ und „Optional“. `?wort` sucht installierte Pakete (z. B. `?heytap`, nur `?` = alle, `[aus]` = eingefroren).
+  Bleibt offen für mehrere Pakete nacheinander; Enter ohne Eingabe = zurück zum Menü.
+  „Nie anfassen“ und die System-Basis (Launcher, SystemUI, Telefon, Settings) lassen sich nur freigeben.
 
 ## Was das Skript technisch macht
 - `pm disable-user --user 0 <paket>` = Paket **einfrieren**, nicht deinstallieren.
@@ -64,4 +70,4 @@ erneut installieren, danach wieder sperren.
 ## Danach
 Telefon einmal neu starten. **USB-Debugging danach wieder ausschalten** (Entwickleroptionen) –
 sonst darf jeder fremde PC mit Kabel auf das Telefon zugreifen.
-Wenn etwas fehlt: Skript erneut starten, [4] wählen – oder [7] für ein einzelnes Paket.
+Wenn etwas fehlt: Skript erneut starten, [4] wählen – oder [7] für einzelne Pakete.
