@@ -13,6 +13,13 @@
 - **New menu 8: status check.** Read-only: shows for each AppOp of menu 5 whether it is still blocked or was
   reset (e.g. by a system update) and which packages from `eingefroren.log` are active again, so you no longer
   have to re-run everything blindly.
+- **Fix menu 5/8: AppOps were reported as "OFFEN" although they were blocked.** The status check read only the
+  first output line of `cmd appops get`; Android prints a separate `Uid mode:` line first, so the package-level
+  `ignore` was never seen. All lines are evaluated now. Missing packages are reported as "not on the device"
+  instead of "OFFEN".
+- Menu 5 now reads every AppOp back after setting it, falls back to `appops set --uid` if the package mode does
+  not stick, and reports `[X]` with the phone's raw answer instead of always printing `[op]`. Menu 6 resets both
+  levels (package and uid).
 - Tested in Wine against an `adb` stub, not yet on a device.
 
 ## v0.9.1-beta — pre-release

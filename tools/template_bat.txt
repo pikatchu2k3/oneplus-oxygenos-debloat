@@ -175,11 +175,17 @@ echo Kein Deinstallieren, nichts wird geloescht. Mit 6 rueckgaengig.
 call :confirm
 if /i not "%GO%"=="j" goto :menu
 echo.
+call :dump
+if errorlevel 1 goto :menu
+set /a OK=0
+set /a FAIL=0
+set /a SKIP=0
 for %%p in (%APPOPS_LIST%) do (
-    call :setop %%p RUN_ANY_IN_BACKGROUND ignore
-    call :setop %%p RUN_IN_BACKGROUND ignore
-    call :setop %%p WAKE_LOCK ignore
+    for %%o in (RUN_ANY_IN_BACKGROUND RUN_IN_BACKGROUND WAKE_LOCK) do call :setop %%p %%o ignore
 )
+echo.
+echo Ergebnis: %OK% gesperrt, %FAIL% nicht uebernommen, %SKIP% nicht vorhanden
+if %FAIL% GTR 0 echo Bei "nicht uebernommen" bitte die Zeile "Telefon meldet" mitschicken.
 goto :done
 
 :status
@@ -188,13 +194,14 @@ echo STATUS - aendert nichts. Nach einem System-Update hier pruefen, ob alles no
 call :dump
 if errorlevel 1 goto :menu
 echo.
-echo --- APP-OPS (Menue 5) ---   [ok] = gesperrt, [OFFEN] = wieder erlaubt
+echo --- APP-OPS (Menue 5) ---   [ok] = gesperrt, [OFFEN] = nicht gesperrt
 set /a SOK=0
 set /a SOPEN=0
+set /a SMISS=0
 for %%p in (%APPOPS_LIST%) do (
     for %%o in (RUN_ANY_IN_BACKGROUND RUN_IN_BACKGROUND WAKE_LOCK) do call :getop %%p %%o
 )
-echo   %SOK% gesperrt, %SOPEN% offen
+echo   %SOK% gesperrt, %SOPEN% offen, %SMISS% nicht vorhanden
 echo.
 echo --- EINGEFROREN (Log eingefroren.log + Menue 2/3) ---
 set /a LOK=0
@@ -212,19 +219,40 @@ pause
 goto :menu
 
 :getop
-set "OPL="
-for /f "delims=" %%r in ('adb %DEVARG% shell cmd appops get %~1 %~2 2^>nul') do if not defined OPL set "OPL=%%r"
-if not defined OPL (
+call :haspkg %~1
+if not defined FOUND (
     echo   %~1  %~2  [nicht auf dem Geraet]
+    set /a SMISS+=1
     exit /b 0
 )
-if not "!OPL:ignore=!"=="!OPL!" (
+call :readop %~1 %~2
+if "%OPSTATE%"=="ignore" (
     echo   %~1  %~2  [ok]
     set /a SOK+=1
 ) else (
     echo   %~1  %~2  [OFFEN]
+    echo       Telefon meldet:!OPRAW!
     set /a SOPEN+=1
 )
+exit /b 0
+
+:readop
+REM Liest den Modus eines App-Ops. Alle Zeilen werden ausgewertet: Android meldet
+REM getrennt "Uid mode: OP: ..." und "OP: ..." (Paket). Gesperrt, sobald eine Ebene ignore/deny ist.
+set "OPSTATE=offen"
+set "OPRAW="
+for /f "delims=" %%r in ('adb %DEVARG% shell cmd appops get %~1 %~2 2^>^&1') do (
+    set "OPL=%%r"
+    set "OPRAW=!OPRAW! %%r"
+    if not "!OPL:: ignore=!"=="!OPL!" set "OPSTATE=ignore"
+    if not "!OPL:: deny=!"=="!OPL!" set "OPSTATE=ignore"
+)
+if not defined OPRAW set "OPRAW= keine Ausgabe"
+exit /b 0
+
+:haspkg
+set "FOUND="
+for /f "usebackq delims=" %%r in ("%~dp0opdb_pk.txt") do if /i "%%r"=="package:%~1" set "FOUND=1"
 exit /b 0
 
 :chkfrozen
@@ -249,11 +277,16 @@ echo APP-OPS zuruecksetzen
 call :confirm
 if /i not "%GO%"=="j" goto :menu
 echo.
+call :dump
+if errorlevel 1 goto :menu
+set /a OK=0
+set /a FAIL=0
+set /a SKIP=0
 for %%p in (%APPOPS_LIST%) do (
-    call :setop %%p RUN_ANY_IN_BACKGROUND default
-    call :setop %%p RUN_IN_BACKGROUND default
-    call :setop %%p WAKE_LOCK default
+    for %%o in (RUN_ANY_IN_BACKGROUND RUN_IN_BACKGROUND WAKE_LOCK) do call :setop %%p %%o default
 )
+echo.
+echo Ergebnis: %OK% zurueckgesetzt, %FAIL% nicht uebernommen, %SKIP% nicht vorhanden
 goto :done
 
 :single
@@ -315,6 +348,209 @@ if /i not "%MODE%"=="e" (
     goto :single_loop
 )
 call :prep
+adb %DEVARG% shell pm disable-user --user 0 !PKG! >nul 2>nul
+call :isoff !PKG!
+if defined OFF (
+    echo [=] !PKG!
+    echo !PKG!>>"%~dp0eingefroren.log"
+) else (
+    echo [x] Hat nicht geklappt. Manche Systempakete laesst Android nicht deaktivieren.
+)
+goto :single_loop
+
+:single_search
+set "FILTER=%PKG:~1%"
+echo.
+echo Gefundene Pakete ([aus] = eingefroren):
+set /a HITS=0
+del "%~dp0opdb_sd.txt" >nul 2>nul
+for /f "delims=" %%r in ('adb %DEVARG% shell pm list packages -d !FILTER!') do >>"%~dp0opdb_sd.txt" echo %%r
+for /f "tokens=2 delims=:" %%r in ('adb %DEVARG% shell pm list packages !FILTER!') do (
+    set /a HITS+=1
+    set "MARK="
+    if exist "%~dp0opdb_sd.txt" for /f "usebackq delims=" %%d in ("%~dp0opdb_sd.txt") do if /i "%%d"=="package:%%r" set "MARK=[aus]"
+    echo   %%r  !MARK!
+)
+del "%~dp0opdb_sd.txt" >nul 2>nul
+echo   (!HITS! Treffer)
+goto :single_loop
+
+:pkgstate
+REM setzt STATE auf fehlt / aktiv / eingefroren (direkt am Geraet abgefragt)
+set "STATE=fehlt"
+for /f "delims=" %%r in ('adb %DEVARG% shell pm list packages %~1') do (
+    if /i "%%r"=="package:%~1" set "STATE=aktiv"
+)
+if "%STATE%"=="fehlt" exit /b 0
+call :isoff %~1
+if defined OFF set "STATE=eingefroren"
+exit /b 0
+
+:askmode
+REM %1 = Gruppenname, %2 = k (Option "keins" anbieten) oder nok
+REM setzt SELMODE auf a / w / k, leer = Abbruch
+set "SELMODE="
+echo.
+echo %~1:
+echo     a = alle einfrieren
+echo     w = selbst auswaehlen (jedes Paket einzeln j/n)
+if /i "%~2"=="k" echo     k = keins aus dieser Gruppe
+echo     Enter = abbrechen
+set "ANS="
+set /p "ANS=Auswahl: "
+if /i "%ANS%"=="a" set "SELMODE=a"
+if /i "%ANS%"=="w" set "SELMODE=w"
+if /i "%~2"=="k" if /i "%ANS%"=="k" set "SELMODE=k"
+if not defined SELMODE echo Abgebrochen, nichts geaendert.
+if not defined SELMODE pause
+exit /b 0
+
+:pick
+REM je nach SELMODE: a = einfrieren, k = auslassen, w = nachfragen
+if /i "%SELMODE%"=="k" exit /b 0
+if /i "%SELMODE%"=="a" (
+    call :freeze %~1
+    exit /b 0
+)
+set "FOUND="
+for /f "usebackq delims=" %%r in ("%~dp0opdb_pk.txt") do if /i "%%r"=="package:%~1" set "FOUND=1"
+if not defined FOUND (
+    set /a SKIP+=1
+    exit /b 0
+)
+set "FOUND="
+for /f "usebackq delims=" %%r in ("%~dp0opdb_pd.txt") do if /i "%%r"=="package:%~1" set "FOUND=1"
+if defined FOUND (
+    echo   [-] %~1   schon aus
+    exit /b 0
+)
+:pick_ask
+set "ANS="
+set /p "ANS=  %~1  einfrieren? (j/n, a=Rest der Gruppe alle, k=Rest keins): "
+if /i "%ANS%"=="j" (
+    call :freeze %~1
+    exit /b 0
+)
+if /i "%ANS%"=="n" (
+    set /a NO+=1
+    exit /b 0
+)
+if /i "%ANS%"=="a" (
+    set "SELMODE=a"
+    call :freeze %~1
+    exit /b 0
+)
+if /i "%ANS%"=="k" (
+    set "SELMODE=k"
+    set /a NO+=1
+    exit /b 0
+)
+goto :pick_ask
+
+:dump
+REM Ausgabe ueber for /f einsammeln: "adb ... > datei" verliert unter Umstaenden
+REM die Ausgabe, und zwei Umleitungen hintereinander verschlucken den zweiten Befehl.
+del "%~dp0opdb_pk.txt" "%~dp0opdb_pd.txt" >nul 2>nul
+for /f "delims=" %%r in ('adb %DEVARG% shell pm list packages') do >>"%~dp0opdb_pk.txt" echo %%r
+set "ANDROIDOK="
+for /f "usebackq delims=" %%r in ("%~dp0opdb_pk.txt") do if /i "%%r"=="package:android" set "ANDROIDOK=1"
+if not defined ANDROIDOK (
+    echo [!] Das Telefon antwortet nicht oder der Ordner ist schreibgeschuetzt.
+    echo     - Bildschirm entsperrt? Kabel fest? Skript aus der ZIP entpackt?
+    echo.
+    pause
+    exit /b 1
+)
+for /f "delims=" %%r in ('adb %DEVARG% shell pm list packages -d') do >>"%~dp0opdb_pd.txt" echo %%r
+exit /b 0
+
+:tag
+set "FOUND="
+for /f "usebackq delims=" %%r in ("%~dp0opdb_pk.txt") do if /i "%%r"=="package:%~1" set "FOUND=1"
+if not defined FOUND (
+    echo   %~1  [nicht auf dem Geraet]
+    exit /b 0
+)
+set "FOUND="
+for /f "usebackq delims=" %%r in ("%~dp0opdb_pd.txt") do if /i "%%r"=="package:%~1" set "FOUND=1"
+if defined FOUND (
+    echo   %~1  [gesperrt/aus]
+) else (
+    echo   %~1  [aktiv]
+)
+exit /b 0
+
+:freeze
+set "FOUND="
+for /f "usebackq delims=" %%r in ("%~dp0opdb_pk.txt") do if /i "%%r"=="package:%~1" set "FOUND=1"
+if not defined FOUND (
+    set /a SKIP+=1
+    exit /b 0
+)
+adb %DEVARG% shell pm disable-user --user 0 %~1 >nul 2>nul
+call :isoff %~1
+if not defined OFF (
+    call :prep
+    adb %DEVARG% shell pm disable-user --user 0 %~1 >nul 2>nul
+    call :isoff %~1
+)
+if defined OFF (
+    echo   [=] %~1
+    echo %~1>>"%~dp0eingefroren.log"
+    set /a OK+=1
+) else (
+    echo   [X] %~1   konnte nicht deaktiviert werden
+    set /a FAIL+=1
+)
+exit /b 0
+
+:isoff
+REM Status ueber "pm list packages -d" pruefen statt die Ausgabe von disable-user zu parsen
+set "OFF="
+for /f "delims=" %%r in ('adb %DEVARG% shell pm list packages -d') do (
+    if /i "%%r"=="package:%~1" set "OFF=1"
+)
+exit /b 0
+
+:thaw
+call :isoff %~1
+if not defined OFF exit /b 0
+adb %DEVARG% shell pm enable --user 0 %~1 >nul 2>nul
+call :isoff %~1
+if defined OFF exit /b 0
+echo   [+] %~1
+set /a OK+=1
+exit /b 0
+
+:setop
+REM %1 Paket, %2 Op, %3 ignore/default. Prueft danach, ob der Wert wirklich gesetzt ist.
+call :haspkg %~1
+if not defined FOUND (
+    set /a SKIP+=1
+    exit /b 0
+)
+adb %DEVARG% shell cmd appops set %~1 %~2 %~3 >nul 2>nul
+if /i "%~3"=="default" adb %DEVARG% shell cmd appops set --uid %~1 %~2 default >nul 2>nul
+call :readop %~1 %~2
+if /i "%~3"=="ignore" if not "%OPSTATE%"=="ignore" (
+    REM Manche Systeme werten nur den Modus der UID aus - dann dort setzen
+    adb %DEVARG% shell cmd appops set --uid %~1 %~2 ignore >nul 2>nul
+    call :readop %~1 %~2
+)
+set "OPGOOD="
+if /i "%~3"=="ignore" if "%OPSTATE%"=="ignore" set "OPGOOD=1"
+if /i "%~3"=="default" if not "%OPSTATE%"=="ignore" set "OPGOOD=1"
+if defined OPGOOD (
+    echo   [op] %~1 %~2 = %~3
+    set /a OK+=1
+) else (
+    echo   [X]  %~1 %~2 nicht uebernommen
+    echo        Telefon meldet:!OPRAW!
+    set /a FAIL+=1
+)
+exit /b 0
+
+:prep
 adb %DEVARG% shell pm disable-user --user 0 !PKG! >nul 2>nul
 call :isoff !PKG!
 if defined OFF (
