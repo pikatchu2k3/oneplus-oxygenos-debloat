@@ -10,6 +10,9 @@
   skipped entirely. New `?word` search over installed packages (frozen ones marked `[aus]`), status display
   before acting, and the prompt stays open for several packages. Never-touch and system-base packages can
   still not be frozen, but can now be released here.
+- **New menu 8: status check.** Read-only: shows for each AppOp of menu 5 whether it is still blocked or was
+  reset (e.g. by a system update) and which packages from `eingefroren.log` are active again, so you no longer
+  have to re-run everything blindly.
 - Tested in Wine against an `adb` stub, not yet on a device.
 
 ## v0.9.1-beta — pre-release
