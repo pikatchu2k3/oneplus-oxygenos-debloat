@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.9.2-beta — pre-release
 
 - **Menu 2 and 3: pick your own packages.** Before freezing, choose `a` (all, as before) or `w` (choose):
   every package that exists and is still active is asked one by one (`j`/`n`, `a` = rest of the group,
