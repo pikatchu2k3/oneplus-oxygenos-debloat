@@ -74,7 +74,7 @@ German version: [README.de.md](README.de.md)
 - **6 — AppOps reset**: sets those three ops back to `default`.
 - **8 — Status**: post-update check, changes nothing. Shows per AppOp whether it is still blocked (`[ok]`) or
   allowed again (`[OFFEN]`), and which packages from `eingefroren.log` are active again. If something differs,
-  just run 5 or 2/3/7 again.
+  just run 5 or 2/3/7 again. Under `[OFFEN]` the phone's raw answer is shown.
 - **7 — Single**: freeze (`e`) or release (`f`) **any** app or service, including packages from the safe/optional
   lists — this lets you skip 2 and 3 entirely. `?word` searches installed packages (e.g. `?heytap`; a bare `?`
   lists all, `[aus]` = frozen). The prompt stays open until you press Enter on an empty line. Only the system

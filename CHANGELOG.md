@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- **Fix menu 5/8: AppOps were reported as "OFFEN" although they were blocked.** The status check read only the
+  first output line of `cmd appops get`; Android prints a separate `Uid mode:` line first, so the package-level
+  `ignore` was never seen. All lines are evaluated now. Missing packages are reported as "not on the device"
+  instead of "OFFEN".
+- Menu 5 now reads every AppOp back after setting it, falls back to `appops set --uid` if the package mode does
+  not stick, and reports `[X]` with the phone's raw answer instead of always printing `[op]`. Menu 6 resets both
+  levels (package and uid).
+- Fix: with no frozen package yet, the temporary list of disabled packages was never created, so menus 1, 2, 3
+  and 8 printed "file not found" for every package. The file is now always created.
+- Tested in Wine against a stub that mimics the `Uid mode:` line, missing packages and a package mode that
+  does not stick; not yet on a device.
+
 ## v0.9.2-beta — pre-release
 
 - **Menu 2 and 3: pick your own packages.** Before freezing, choose `a` (all, as before) or `w` (choose):
