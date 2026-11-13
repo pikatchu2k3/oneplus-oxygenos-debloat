@@ -1,17 +1,17 @@
-# OnePlus OxygenOS Debloat (ADB)
+# OnePlus OxygenOS & ColorOS Debloat (ADB)
 
-> ## ⚠️ PRE-RELEASE — v0.9.0-beta
+> ## ⚠️ PRE-RELEASE — v0.9.6-beta
 >
 > This is a **pre-release**. Things can break, and the package lists may not fit every model or region.
 >
-> **It has not been run on a physical OnePlus device yet.** It was verified only in an emulated
-> Windows environment (Wine) against a self-built `adb` stub. Everything it does is reversible,
-> but you are using it at your own risk.
+> The script was developed in an emulated Windows environment (Wine) against a self-built `adb` stub.
+> First reports from real devices (OxygenOS and ColorOS) have been fixed in v0.9.4–v0.9.6, but real-device
+> testing is still limited. Everything it does is reversible, but you are using it at your own risk.
 >
 > Feedback, package names from other OnePlus models and corrections are very welcome — please open an issue.
 
 A single Windows batch file that **freezes** bloatware, telemetry and unused system apps on OnePlus
-phones instead of uninstalling them. No root, no Shizuku, no Canta, no App Manager — just a USB cable
+phones running **OxygenOS or ColorOS** instead of uninstalling them. No root, no Shizuku, no Canta, no App Manager — just a USB cable
 and `adb` — plus an optional firewall blocklist against trackers and a clear update path via
 **OS Updater**, because the firewall switches the OTA services off.
 
@@ -35,7 +35,7 @@ German version: [README.de.md](README.de.md)
 - No root, no custom ROM, no firmware flashing
 - No DNS blocking — use the optional firewall blocklist below, or a NextDNS profile (chapter 6 in
   `docs/oneplus_cleanup.pdf`)
-- No UI settings (autostart, notifications, battery optimisation) — those are switches inside OxygenOS
+- No UI settings (autostart, notifications, battery optimisation) — those are switches inside OxygenOS / ColorOS
 
 ## Requirements
 
@@ -164,11 +164,12 @@ Some packages were deliberately moved to *Optional* after review: `work.clouddpc
 
 ## Known limitations
 
-- Tested on Wine + stub `adb` only, not on real hardware yet
-- Package names differ between models, regions and OxygenOS versions — missing ones are skipped silently
+- Mostly tested on Wine + stub `adb`; real-device feedback so far is limited (OxygenOS and ColorOS)
+- Package names differ between models, regions and OxygenOS / ColorOS versions — missing ones are skipped silently
   (listed as “not on device”)
 - The `com.android.shell` workaround is unproven on the newest OxygenOS builds
-- Chinese ROMs (ColorOS-based) contain many more packages than the lists here
+- Chinese ROMs (ColorOS-based) contain many more packages than the lists here; the packages checked are
+  shared between OxygenOS and ColorOS (`com.oplus.*`, `com.coloros.*`), but expect more on ColorOS
 - AppOps names can change between Android versions; menu 5 prints only what actually succeeded
 - The firewall list has not been tested on a device: its format and value semantics were verified against the
   FireWall Blocks source code, the import itself was not

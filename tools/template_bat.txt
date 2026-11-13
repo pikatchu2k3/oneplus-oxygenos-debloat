@@ -1,9 +1,10 @@
 @echo off
 setlocal EnableDelayedExpansion
-title OnePlus Clean-Up - per ADB
+set "APP_VERSION=0.9.6-beta"
+title OnePlus Clean-Up v%APP_VERSION% - OxygenOS / ColorOS - per ADB
 color 0B
 REM ============================================================
-REM  OnePlus Clean-Up fuer Windows - Ersatz fuer Canta + App Manager
+REM  OnePlus Clean-Up fuer Windows (OxygenOS / ColorOS) - Ersatz fuer Canta + App Manager
 REM  "einfrieren" = pm disable-user --user 0   (nichts wird geloescht)
 REM  Rueckgaengig: Menuepunkt 4 oder 7.  Hilfe: ANLEITUNG-BAT.txt
 REM ============================================================
@@ -42,13 +43,14 @@ if !ND! GTR 1 (
 )
 for /f "delims=" %%m in ('adb shell getprop ro.product.model 2^>nul') do set "MODEL=%%m"
 for /f "delims=" %%v in ('adb shell getprop ro.build.version.release 2^>nul') do set "AVER=%%v"
+echo [i] OnePlus Clean-Up v%APP_VERSION%
 echo [i] Geraet: !MODEL!  (Android !AVER!)
 echo [i] Bildschirm entsperrt lassen, Kabel nicht ziehen.
 
 :menu
 echo.
 echo ============================================================
-echo   OnePlus Clean-Up
+echo   OnePlus Clean-Up  v%APP_VERSION%  (OxygenOS / ColorOS)
 echo ============================================================
 echo   1  UEBERSICHT     Was ist vorhanden/gesperrt (aendert nichts)
 echo   2  SICHER         @@NSAFE@@ Pakete einfrieren (alle oder selbst auswaehlen)
