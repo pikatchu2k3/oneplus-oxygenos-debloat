@@ -71,6 +71,9 @@ German version: [README.de.md](README.de.md)
 - **4 — Reset**: re-enables everything this script froze. Works at any time.
 - **5 — AppOps**: blocks `RUN_ANY_IN_BACKGROUND`, `RUN_IN_BACKGROUND` and `WAKE_LOCK` for
   `statistics.rom`, `logkit`, `onetrace`, `postmanservice`, `ocloud`. Survives reboots.
+  Packages that are already frozen are skipped — they do not run anyway. Some OnePlus system packages refuse
+  AppOps (answer `No operations` / `Default mode: allow`); ADB cannot force that. For those, freezing them via
+  menu 7 is the effective route.
 - **6 — AppOps reset**: sets those three ops back to `default`.
 - **8 — Status**: post-update check, changes nothing. Shows per AppOp whether it is still blocked (`[ok]`) or
   allowed again (`[OFFEN]`), and which packages from `eingefroren.log` are active again. If something differs,

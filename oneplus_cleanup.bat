@@ -180,12 +180,13 @@ if errorlevel 1 goto :menu
 set /a OK=0
 set /a FAIL=0
 set /a SKIP=0
+set /a FROZ=0
 for %%p in (%APPOPS_LIST%) do (
     for %%o in (RUN_ANY_IN_BACKGROUND RUN_IN_BACKGROUND WAKE_LOCK) do call :setop %%p %%o ignore
 )
 echo.
-echo Ergebnis: %OK% gesperrt, %FAIL% nicht uebernommen, %SKIP% nicht vorhanden
-if %FAIL% GTR 0 echo Bei "nicht uebernommen" bitte die Zeile "Telefon meldet" mitschicken.
+echo Ergebnis: %OK% gesperrt, %FROZ% eingefroren ^(Sperre unnoetig^), %FAIL% vom Telefon abgelehnt, %SKIP% nicht vorhanden
+if %FAIL% GTR 0 call :refusedhint
 goto :done
 
 :status
@@ -212,7 +213,7 @@ if exist "%~dp0eingefroren.log" (
 )
 if "%LOK%%LBACK%"=="00" echo   Kein Log vorhanden - dann zeigt Menue 1 den Stand der Listen.
 echo   %LOK% weiter eingefroren, %LBACK% wieder aktiv
-if %SOPEN% GTR 0 echo   Tipp: Menue 5 erneut ausfuehren.
+if %SOPEN% GTR 0 echo   Tipp: Menue 5 erneut ausfuehren. Steht dort "abgelehnt", Paket per Menue 7 einfrieren.
 if %LBACK% GTR 0 echo   Tipp: Menue 2/3 bzw. 7 erneut ausfuehren - Details: Menue 1.
 call :cleanup
 pause
@@ -223,6 +224,12 @@ call :haspkg %~1
 if not defined FOUND (
     echo   %~1  %~2  [nicht auf dem Geraet]
     set /a SMISS+=1
+    exit /b 0
+)
+call :isfrozen %~1
+if defined FROZEN (
+    echo   %~1  %~2  [ok - eingefroren]
+    set /a SOK+=1
     exit /b 0
 )
 call :readop %~1 %~2
@@ -255,6 +262,21 @@ set "FOUND="
 for /f "usebackq delims=" %%r in ("%~dp0opdb_pk.txt") do if /i "%%r"=="package:%~1" set "FOUND=1"
 exit /b 0
 
+:isfrozen
+REM Eingefrorene Pakete laufen ueberhaupt nicht - eine App-Ops-Sperre ist dann unnoetig
+set "FROZEN="
+for /f "usebackq delims=" %%r in ("%~dp0opdb_pd.txt") do if /i "%%r"=="package:%~1" set "FROZEN=1"
+exit /b 0
+
+:refusedhint
+echo.
+echo "Abgelehnt" heisst: Das Telefon nimmt den Befehl an, speichert ihn aber nicht
+echo ^(Antwort "No operations"^). OnePlus schuetzt manche eigenen Systempakete so.
+echo Das laesst sich per ADB nicht erzwingen. Wirksame Alternative: das Paket ueber
+echo Menue 7 einfrieren - dann laeuft es gar nicht mehr, auch nicht im Hintergrund.
+echo Menue 4 holt es jederzeit zurueck.
+exit /b 0
+
 :chkfrozen
 if not "!SEEN: %~1 =!"=="!SEEN!" exit /b 0
 set "SEEN=!SEEN!%~1 "
@@ -282,6 +304,7 @@ if errorlevel 1 goto :menu
 set /a OK=0
 set /a FAIL=0
 set /a SKIP=0
+set /a FROZ=0
 for %%p in (%APPOPS_LIST%) do (
     for %%o in (RUN_ANY_IN_BACKGROUND RUN_IN_BACKGROUND WAKE_LOCK) do call :setop %%p %%o default
 )
@@ -531,6 +554,12 @@ if not defined FOUND (
     set /a SKIP+=1
     exit /b 0
 )
+if /i "%~3"=="ignore" call :isfrozen %~1
+if /i "%~3"=="ignore" if defined FROZEN (
+    echo   [-]  %~1 %~2  eingefroren - Sperre unnoetig
+    set /a FROZ+=1
+    exit /b 0
+)
 adb %DEVARG% shell cmd appops set %~1 %~2 %~3 >nul 2>nul
 if /i "%~3"=="default" adb %DEVARG% shell cmd appops set --uid %~1 %~2 default >nul 2>nul
 call :readop %~1 %~2
@@ -546,7 +575,7 @@ if defined OPGOOD (
     echo   [op] %~1 %~2 = %~3
     set /a OK+=1
 ) else (
-    echo   [X]  %~1 %~2 nicht uebernommen
+    echo   [X]  %~1 %~2  vom Telefon abgelehnt
     echo        Telefon meldet:!OPRAW!
     set /a FAIL+=1
 )
