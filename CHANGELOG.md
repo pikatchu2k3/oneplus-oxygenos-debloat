@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.9.4-beta — pre-release
 
 - **Fix menu 5/8: AppOps were reported as "OFFEN" although they were blocked.** The status check read only the
   first output line of `cmd appops get`; Android prints a separate `Uid mode:` line first, so the package-level
@@ -11,8 +11,8 @@
   levels (package and uid).
 - Fix: with no frozen package yet, the temporary list of disabled packages was never created, so menus 1, 2, 3
   and 8 printed "file not found" for every package. The file is now always created.
-- Tested in Wine against a stub that mimics the `Uid mode:` line, missing packages and a package mode that
-  does not stick; not yet on a device.
+- Tested in Wine against an `adb` stub with `Uid mode: …allow` plus package-level `ignore` (the reported bug),
+  missing packages and a package mode that does not stick; not yet on a device.
 
 ## v0.9.2-beta — pre-release
 
