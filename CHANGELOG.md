@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.9.5-beta — pre-release
 
 - **Menu 5/8: frozen packages and refused AppOps.** Real-device feedback showed `No operations` /
   `Default mode: allow` for `statistics.rom`, `onetrace` and `postmanservice`: the phone accepts
