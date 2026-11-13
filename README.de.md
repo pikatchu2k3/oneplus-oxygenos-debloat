@@ -1,18 +1,19 @@
-# OnePlus OxygenOS Debloat (ADB)
+# OnePlus OxygenOS & ColorOS Debloat (ADB)
 
-> ## ⚠️ VORABVERSION — v0.9.0-beta
+> ## ⚠️ VORABVERSION — v0.9.6-beta
 >
 > Das hier ist eine **Vorabversion**. Es kann haken, und die Paketlisten passen nicht zwangsläufig zu
 > jedem Modell und jeder Region.
 >
-> **Auf einem echten OnePlus wurde das Skript noch nicht ausgeführt.** Getestet wurde nur in einer
-> nachgebauten Windows-Umgebung (Wine) gegen einen selbst gebauten `adb`-Stub. Alles, was das Skript tut,
-> ist umkehrbar — die Nutzung erfolgt trotzdem auf eigene Gefahr.
+> Entwickelt wurde das Skript in einer nachgebauten Windows-Umgebung (Wine) gegen einen selbst gebauten
+> `adb`-Stub. Erste Rückmeldungen von echten Geräten (OxygenOS und ColorOS) sind in v0.9.4–v0.9.6 eingeflossen,
+> die Tests auf echter Hardware sind aber noch begrenzt. Alles, was das Skript tut, ist umkehrbar — die
+> Nutzung erfolgt trotzdem auf eigene Gefahr.
 >
 > Rückmeldungen, Paketnamen anderer OnePlus-Modelle und Korrekturen sind ausdrücklich willkommen (Issue aufmachen).
 
 Eine einzelne Windows-Batchdatei, die Bloatware, Telemetrie und ungenutzte System-Apps auf OnePlus-Geräten
-**einfriert**, statt sie zu deinstallieren. Kein Root, kein Shizuku, kein Canta, kein App Manager — nur
+mit **OxygenOS oder ColorOS** **einfriert**, statt sie zu deinstallieren. Kein Root, kein Shizuku, kein Canta, kein App Manager — nur
 USB-Kabel und `adb` — plus eine optionale Firewall-Blockliste gegen Tracker und ein klarer Update-Weg
 über **OS Updater**, weil die Firewall die OTA-Dienste abschaltet.
 
@@ -36,7 +37,7 @@ English version: [README.md](README.md)
 - Kein Root, kein Custom-ROM, kein Flashen
 - Kein DNS-Blocking — dafür gibt es die optionale Firewall-Blockliste (siehe unten) oder ein NextDNS-Profil
   (Kapitel 6 in `docs/oneplus_cleanup.pdf`)
-- Keine UI-Einstellungen (Autostart, Benachrichtigungen, Akku-Optimierung) — das sind Schalter in OxygenOS
+- Keine UI-Einstellungen (Autostart, Benachrichtigungen, Akku-Optimierung) — das sind Schalter in OxygenOS / ColorOS
 
 ## Voraussetzungen
 
@@ -165,11 +166,13 @@ Nach Prüfung bewusst nach *Optional* verschoben: `work.clouddpc` (Schul-/MDM-Ei
 
 ## Bekannte Grenzen
 
-- Bisher nur unter Wine mit Stub-`adb` getestet, noch nicht auf echter Hardware
-- Paketnamen unterscheiden sich zwischen Modellen, Regionen und OxygenOS-Versionen — fehlende werden
+- Überwiegend unter Wine mit Stub-`adb` getestet; Rückmeldungen von echten Geräten (OxygenOS und ColorOS) gibt es
+  bisher nur wenige
+- Paketnamen unterscheiden sich zwischen Modellen, Regionen und OxygenOS-/ColorOS-Versionen — fehlende werden
   übersprungen und als „nicht auf dem Gerät“ geführt
 - Der `com.android.shell`-Workaround ist auf den neuesten OxygenOS-Builds nicht belegt
-- Chinesische ROMs (ColorOS-Basis) enthalten deutlich mehr Pakete als diese Listen
+- Chinesische ROMs (ColorOS-Basis) enthalten deutlich mehr Pakete als diese Listen; die geprüften Pakete
+  (`com.oplus.*`, `com.coloros.*`) gibt es bei OxygenOS und ColorOS, auf ColorOS ist aber mit mehr zu rechnen
 - AppOps-Namen können sich zwischen Android-Versionen ändern; Menü 5 zeigt nur, was wirklich geklappt hat
 - Die Firewall-Liste ist nicht auf einem Gerät getestet: Format und Bedeutung der Werte wurden gegen den
   Quellcode von FireWall Blocks geprüft, der Import selbst nicht

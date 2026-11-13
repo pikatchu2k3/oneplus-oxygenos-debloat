@@ -1,4 +1,9 @@
-# OnePlus Clean-Up per BAT – kurz erklärt
+# OnePlus Clean-Up per BAT – kurz erklärt (OxygenOS und ColorOS)
+
+## Version prüfen
+Die Versionsnummer steht beim Start in der Zeile `[i] OnePlus Clean-Up v…`, im Menükopf und in der
+Fensterleiste. Die aktuelle Version gibt es unter
+https://github.com/pikatchu2k3/oneplus-oxygenos-debloat/releases – neue Version immer in einen **neuen Ordner** entpacken.
 
 ## Was du brauchst
 1. Windows-PC + USB-Kabel

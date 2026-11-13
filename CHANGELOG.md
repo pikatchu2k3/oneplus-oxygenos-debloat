@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.9.6-beta — pre-release
+
+- **Version display.** The version is shown in the window title, in a startup line (`[i] OnePlus Clean-Up v…`)
+  and in the menu header, so a user can tell at a glance which script they are running. It lives in one
+  place (`APP_VERSION` at the top of `oneplus_cleanup.bat` and `tools/template_bat.txt`).
+- **Renamed to "OnePlus OxygenOS & ColorOS Debloat".** The tool is also used on ColorOS; readmes, the
+  instructions, the window title and the menu header now say so. The pre-release banner no longer claims that
+  the script was never run on a device, and the known-limitations section reflects the real-device feedback.
+- No change to package lists or behaviour.
+
 ## v0.9.5-beta — pre-release
 
 - **Menu 5/8: frozen packages and refused AppOps.** Real-device feedback showed `No operations` /
