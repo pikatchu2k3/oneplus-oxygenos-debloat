@@ -71,6 +71,9 @@ English version: [README.md](README.md)
 - **4 — Reset**: aktiviert alles wieder, was dieses Skript eingefroren hat. Jederzeit möglich.
 - **5 — App-Ops**: sperrt `RUN_ANY_IN_BACKGROUND`, `RUN_IN_BACKGROUND` und `WAKE_LOCK` für
   `statistics.rom`, `logkit`, `onetrace`, `postmanservice`, `ocloud`. Überlebt Neustarts.
+  Bereits eingefrorene Pakete werden übersprungen — sie laufen ohnehin nicht. Manche OnePlus-Systempakete
+  lehnen App-Ops ab (Antwort `No operations` / `Default mode: allow`); das lässt sich per ADB nicht erzwingen.
+  Für diese Pakete ist Einfrieren über Menü 7 der wirksame Weg.
 - **6 — App-Ops Reset**: setzt diese drei Ops auf `default` zurück.
 - **8 — Status**: Kontrolle nach einem System-Update, ändert nichts. Zeigt je App-Op, ob es noch gesperrt (`[ok]`)
   oder wieder erlaubt (`[OFFEN]`) ist, und welche Pakete aus `eingefroren.log` wieder aktiv sind. Bei Abweichungen

@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **Menu 5/8: frozen packages and refused AppOps.** Real-device feedback showed `No operations` /
+  `Default mode: allow` for `statistics.rom`, `onetrace` and `postmanservice`: the phone accepts
+  `appops set` but stores nothing, on package and uid level. ADB cannot override this.
+  - Menu 5 skips packages that are already frozen (they cannot run, so the lock is unnecessary) and
+    counts them separately; menu 8 shows them as `[ok - eingefroren]`.
+  - Refusals are now labelled "vom Telefon abgelehnt", followed by an explanation and the advice to freeze
+    the package via menu 7 instead of re-running menu 5.
+- Tested in Wine against a stub that reproduces the exact device answer; not yet re-run on the device.
+
 ## v0.9.4-beta — pre-release
 
 - **Fix menu 5/8: AppOps were reported as "OFFEN" although they were blocked.** The status check read only the

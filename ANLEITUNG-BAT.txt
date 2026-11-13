@@ -29,6 +29,9 @@ Falls SmartScreen warnt: „Weitere Informationen“ → „Trotzdem ausführen�
 - **[5] App-Ops** – sperrt Hintergrund und Wakelocks von fünf Telemetrie-Diensten (statistics.rom, logkit,
   onetrace, postmanservice, ocloud). Überlebt Neustart, nichts wird gelöscht. Jeder Wert wird danach zurückgelesen; was das Telefon nicht
   übernimmt, erscheint als `[X]` mit der Antwort des Telefons. **[6]** setzt es zurück.
+  Schon eingefrorene Pakete überspringt [5] („Sperre unnötig“), [8] zeigt sie als `[ok - eingefroren]`.
+  Antwortet das Telefon mit `No operations` / `Default mode: allow`, lehnt OnePlus die Sperre für dieses
+  Systempaket ab – dann das Paket stattdessen über [7] einfrieren.
 - **[8] Status** – Kontrolle nach einem System-Update, ändert nichts: zeigt, ob die App-Ops von [5] noch gesperrt
   sind (`[ok]`/`[OFFEN]`) und ob Pakete aus `eingefroren.log` wieder aktiv geworden sind. Dann [5] bzw. [2]/[3]/[7] erneut.
 - **[7] Einzeln** – beliebige Apps/Dienste nach Wunsch einfrieren (`e`) oder freigeben (`f`), auch Pakete aus
