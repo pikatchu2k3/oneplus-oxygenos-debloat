@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableDelayedExpansion
-set "APP_VERSION=0.9.6-beta"
+set "APP_VERSION=0.9.7-beta"
 title OnePlus Clean-Up v%APP_VERSION% - OxygenOS / ColorOS - per ADB
 color 0B
 REM ============================================================
@@ -153,7 +153,7 @@ goto :done
 :reset
 cls
 echo RESET - alles wieder aktivieren
-echo Betrifft nur Pakete, die dieses Skript eingefroren hat.
+echo Betrifft nur Pakete, die dieses Skript eingefroren oder in Menue 7 entfernt hat.
 echo Mit Canta deinstallierte Apps holt "pm install-existing" zurueck (siehe Anleitung).
 call :confirm
 if /i not "%GO%"=="j" goto :menu
@@ -165,9 +165,15 @@ for %%p in (%SAFE_LIST% %OPT_LIST%) do call :thaw %%p
 if exist "%~dp0eingefroren.log" (
     for /f "usebackq delims=" %%p in ("%~dp0eingefroren.log") do call :thaw %%p
 )
+set /a RFAIL=0
+if exist "%~dp0entfernt.log" (
+    for /f "usebackq delims=" %%p in ("%~dp0entfernt.log") do call :restorepkg %%p
+)
 echo.
-echo Ergebnis: %OK% Pakete wieder aktiviert
+echo Ergebnis: %OK% Pakete wieder aktiviert bzw. zurueckgeholt
 del "%~dp0eingefroren.log" >nul 2>nul
+REM Das Entfernt-Log nur loeschen, wenn alles zurueckkam - sonst geht der Rueckweg verloren
+if %RFAIL% EQU 0 del "%~dp0entfernt.log" >nul 2>nul
 goto :done
 
 :appops
@@ -206,15 +212,18 @@ for %%p in (%APPOPS_LIST%) do (
 )
 echo   %SOK% gesperrt, %SOPEN% offen, %SMISS% nicht vorhanden
 echo.
-echo --- EINGEFROREN (Log eingefroren.log + Menue 2/3) ---
+echo --- EINGEFROREN / ENTFERNT (Logs eingefroren.log, entfernt.log) ---
 set /a LOK=0
 set /a LBACK=0
 set "SEEN= "
 if exist "%~dp0eingefroren.log" (
     for /f "usebackq delims=" %%p in ("%~dp0eingefroren.log") do call :chkfrozen %%p
 )
+if exist "%~dp0entfernt.log" (
+    for /f "usebackq delims=" %%p in ("%~dp0entfernt.log") do call :chkremoved %%p
+)
 if "%LOK%%LBACK%"=="00" echo   Kein Log vorhanden - dann zeigt Menue 1 den Stand der Listen.
-echo   %LOK% weiter eingefroren, %LBACK% wieder aktiv
+echo   %LOK% weiter eingefroren/entfernt, %LBACK% wieder aktiv
 if %SOPEN% GTR 0 echo   Tipp: Menue 5 erneut ausfuehren. Steht dort "abgelehnt", Paket per Menue 7 einfrieren.
 if %LBACK% GTR 0 echo   Tipp: Menue 2/3 bzw. 7 erneut ausfuehren - Details: Menue 1.
 call :cleanup
@@ -295,6 +304,18 @@ if defined FOUND (
 )
 exit /b 0
 
+:chkremoved
+if not "!SEEN: %~1 =!"=="!SEEN!" exit /b 0
+set "SEEN=!SEEN!%~1 "
+call :haspkg %~1
+if defined FOUND (
+    echo   %~1  [WIEDER DA]  - z.B. nach einem Update; in Menue 7 erneut entfernen
+    set /a LBACK+=1
+) else (
+    set /a LOK+=1
+)
+exit /b 0
+
 :appops_off
 cls
 echo APP-OPS zuruecksetzen
@@ -321,7 +342,8 @@ echo   Paketname eingeben, z.B. com.heytap.browser
 echo   ?wort  = installierte Pakete suchen, z.B. ?heytap  (nur ? = alle)
 echo   Enter ohne Eingabe = zurueck zum Menue
 echo   System-Basis und "Nie anfassen"-Liste: nur Freigeben moeglich, kein Einfrieren.
-echo   Alles hier Eingefrorene holt Menuepunkt 4 wieder zurueck.
+echo   Laesst das Telefon ein Paket nicht einfrieren, bietet das Skript "entfernen" an.
+echo   Alles hier Eingefrorene oder Entfernte holt Menuepunkt 4 wieder zurueck.
 :single_loop
 echo.
 set "PKG="
@@ -349,6 +371,7 @@ if "%STATE%"=="fehlt" (
     echo [x] %PKG% ist nicht auf dem Geraet. Tipp: mit ?teil suchen.
     goto :single_loop
 )
+if "%STATE%"=="entfernt" goto :single_removed
 echo     Status: %STATE%
 set "MODE="
 if defined LOCKED (
@@ -365,6 +388,7 @@ if /i "%MODE%"=="f" (
         echo [x] Freigeben hat nicht geklappt.
     ) else (
         echo [+] !PKG!
+        call :unlog eingefroren.log !PKG!
     )
     goto :single_loop
 )
@@ -373,15 +397,82 @@ if /i not "%MODE%"=="e" (
     goto :single_loop
 )
 call :prep
-adb %DEVARG% shell pm disable-user --user 0 !PKG! >nul 2>nul
-call :isoff !PKG!
+set "DRAW="
+for /f "delims=" %%r in ('adb %DEVARG% shell pm disable-user --user 0 %PKG% 2^>^&1') do if not defined DRAW set "DRAW=%%r"
+call :isoff %PKG%
 if defined OFF (
-    echo [=] !PKG!
-    echo !PKG!>>"%~dp0eingefroren.log"
-) else (
-    echo [x] Hat nicht geklappt. Manche Systempakete laesst Android nicht deaktivieren.
+    echo [=] %PKG%
+    echo %PKG%>>"%~dp0eingefroren.log"
+    goto :single_loop
 )
+echo [x] Einfrieren klappt nicht. Telefon meldet: !DRAW!
+call :offerremove %PKG%
 goto :single_loop
+
+:single_removed
+echo     Status: entfernt ^(fuer den Nutzer, Systemkopie ist noch da^)
+set "MODE="
+set /p "MODE=f = zurueckholen / Enter = nichts: "
+if /i not "%MODE%"=="f" (
+    echo Nichts geaendert.
+    goto :single_loop
+)
+set /a RFAIL=0
+call :restorepkg %PKG%
+if %RFAIL% EQU 0 call :unlog entfernt.log %PKG%
+goto :single_loop
+
+:unlog
+REM Entfernt ein Paket aus einem Log, wenn es in Menue 7 bewusst zurueckgeholt wurde -
+REM sonst meldet Menue 8 es faelschlich als "wieder aktiv".
+if not exist "%~dp0%~1" exit /b 0
+del "%~dp0opdb_tmp.txt" >nul 2>nul
+for /f "usebackq delims=" %%r in ("%~dp0%~1") do if /i not "%%r"=="%~2" >>"%~dp0opdb_tmp.txt" echo %%r
+del "%~dp0%~1" >nul 2>nul
+if exist "%~dp0opdb_tmp.txt" move /y "%~dp0opdb_tmp.txt" "%~dp0%~1" >nul
+exit /b 0
+
+:offerremove
+REM Fallback, wenn OnePlus "pm disable-user" ignoriert (Antwort "new state: default").
+REM "pm uninstall -k --user 0" entfernt das Paket nur fuer den Nutzer: Systemkopie und
+REM Daten bleiben, "pm install-existing" holt es zurueck. Derselbe Weg wie bei Canta.
+echo.
+echo     OnePlus laesst dieses Paket nicht einfrieren. Sicherer Ausweg:
+echo     fuer den Nutzer ENTFERNEN - wie Canta, ohne Root.
+echo       - die Systemkopie bleibt auf dem Telefon, App-Daten bleiben erhalten
+echo       - ein Werksreset bringt es ebenfalls zurueck
+echo       - rueckgaengig: Menue 4 oder hier in Menue 7 mit f
+set "RM="
+set /p "RM=    u = entfernen / Enter = nichts: "
+if /i not "%RM%"=="u" (
+    echo     Nichts geaendert.
+    exit /b 0
+)
+set "RRAW="
+for /f "delims=" %%r in ('adb %DEVARG% shell pm uninstall -k --user 0 %~1 2^>^&1') do if not defined RRAW set "RRAW=%%r"
+call :pkgstate %~1
+if "%STATE%"=="entfernt" (
+    echo [-] %~1 entfernt
+    echo %~1>>"%~dp0entfernt.log"
+    exit /b 0
+)
+echo [x] Entfernen hat nicht geklappt. Telefon meldet: !RRAW!
+exit /b 0
+
+:restorepkg
+REM Holt ein fuer den Nutzer entferntes Paket zurueck (nur wenn es wirklich entfernt ist)
+call :pkgstate %~1
+if not "%STATE%"=="entfernt" exit /b 0
+adb %DEVARG% shell pm install-existing --user 0 %~1 >nul 2>nul
+call :pkgstate %~1
+if "%STATE%"=="entfernt" (
+    echo   [x] %~1 konnte nicht zurueckgeholt werden
+    set /a RFAIL+=1
+    exit /b 0
+)
+echo   [+] %~1 wieder da
+set /a OK+=1
+exit /b 0
 
 :single_search
 set "FILTER=%PKG:~1%"
@@ -401,12 +492,18 @@ echo   (!HITS! Treffer)
 goto :single_loop
 
 :pkgstate
-REM setzt STATE auf fehlt / aktiv / eingefroren (direkt am Geraet abgefragt)
+REM setzt STATE auf fehlt / entfernt / aktiv / eingefroren (direkt am Geraet abgefragt)
 set "STATE=fehlt"
 for /f "delims=" %%r in ('adb %DEVARG% shell pm list packages %~1') do (
     if /i "%%r"=="package:%~1" set "STATE=aktiv"
 )
-if "%STATE%"=="fehlt" exit /b 0
+if not "%STATE%"=="fehlt" goto :pkgstate_on
+REM "-u" listet auch Pakete, die fuer den Nutzer entfernt wurden
+for /f "delims=" %%r in ('adb %DEVARG% shell pm list packages -u %~1') do (
+    if /i "%%r"=="package:%~1" set "STATE=entfernt"
+)
+exit /b 0
+:pkgstate_on
 call :isoff %~1
 if defined OFF set "STATE=eingefroren"
 exit /b 0
@@ -475,7 +572,7 @@ goto :pick_ask
 :dump
 REM Ausgabe ueber for /f einsammeln: "adb ... > datei" verliert unter Umstaenden
 REM die Ausgabe, und zwei Umleitungen hintereinander verschlucken den zweiten Befehl.
-del "%~dp0opdb_pk.txt" "%~dp0opdb_pd.txt" >nul 2>nul
+del "%~dp0opdb_pk.txt" "%~dp0opdb_pd.txt" "%~dp0opdb_pu.txt" >nul 2>nul
 for /f "delims=" %%r in ('adb %DEVARG% shell pm list packages') do >>"%~dp0opdb_pk.txt" echo %%r
 set "ANDROIDOK="
 for /f "usebackq delims=" %%r in ("%~dp0opdb_pk.txt") do if /i "%%r"=="package:android" set "ANDROIDOK=1"
@@ -489,15 +586,23 @@ if not defined ANDROIDOK (
 for /f "delims=" %%r in ('adb %DEVARG% shell pm list packages -d') do >>"%~dp0opdb_pd.txt" echo %%r
 REM Ohne eingefrorene Pakete bleibt die Liste leer - Datei trotzdem anlegen, sonst "Datei nicht gefunden"
 if not exist "%~dp0opdb_pd.txt" type nul >"%~dp0opdb_pd.txt"
+REM Inklusive fuer den Nutzer entfernter Pakete (fuer die Anzeige "[entfernt]" in Menue 1)
+for /f "delims=" %%r in ('adb %DEVARG% shell pm list packages -u') do >>"%~dp0opdb_pu.txt" echo %%r
+if not exist "%~dp0opdb_pu.txt" type nul >"%~dp0opdb_pu.txt"
 exit /b 0
 
 :tag
 set "FOUND="
 for /f "usebackq delims=" %%r in ("%~dp0opdb_pk.txt") do if /i "%%r"=="package:%~1" set "FOUND=1"
-if not defined FOUND (
+if defined FOUND goto :tag_on
+for /f "usebackq delims=" %%r in ("%~dp0opdb_pu.txt") do if /i "%%r"=="package:%~1" set "FOUND=1"
+if defined FOUND (
+    echo   %~1  [entfernt]
+) else (
     echo   %~1  [nicht auf dem Geraet]
-    exit /b 0
 )
+exit /b 0
+:tag_on
 set "FOUND="
 for /f "usebackq delims=" %%r in ("%~dp0opdb_pd.txt") do if /i "%%r"=="package:%~1" set "FOUND=1"
 if defined FOUND (
@@ -526,7 +631,7 @@ if defined OFF (
     echo %~1>>"%~dp0eingefroren.log"
     set /a OK+=1
 ) else (
-    echo   [X] %~1   konnte nicht deaktiviert werden
+    echo   [X] %~1   laesst sich nicht einfrieren - Menue 7 bietet "entfernen" an
     set /a FAIL+=1
 )
 exit /b 0
@@ -601,7 +706,7 @@ echo Abgebrochen.
 exit /b 0
 
 :cleanup
-del "%~dp0opdb_pk.txt" "%~dp0opdb_pd.txt" >nul 2>nul
+del "%~dp0opdb_pk.txt" "%~dp0opdb_pd.txt" "%~dp0opdb_pu.txt" >nul 2>nul
 exit /b 0
 
 :done

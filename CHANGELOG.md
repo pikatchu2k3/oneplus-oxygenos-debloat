@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.9.7-beta — pre-release
+
+- **Menu 7: remove for the user when freezing is ignored.** On a real device `com.heytap.browser` answered
+  `pm disable-user` with `new state: default` — the phone accepts the command but keeps the app enabled. Menu 7
+  now shows the phone's answer and offers `u` = remove for the user (`pm uninstall -k --user 0`, the method
+  Canta uses). The system copy and the app data stay; `pm install-existing --user 0` brings it back.
+  Only offered after a failed freeze and only after `u`; never-touch and system-base packages stay locked.
+- Removed packages are logged in `entfernt.log`. Menu 4 restores them (the log is kept if a restore fails),
+  menu 7 shows them as "entfernt" and brings them back with `f`, menu 1 shows `[entfernt]`, menu 8 reports
+  `[WIEDER DA]` if an update reinstalled one.
+- Releasing (`f`) in menu 7 now also removes the package from the log, so menu 8 no longer reports a
+  deliberately released package as "wieder aktiv".
+- Menus 2/3: a failed freeze now points to menu 7.
+- Tested in Wine against a stub that reproduces the device answer (`new state: default`) and a refused
+  uninstall (`DELETE_FAILED_INTERNAL_ERROR`); not yet on a device.
+
 ## v0.9.6-beta — pre-release
 
 - **Version display.** The version is shown in the window title, in a startup line (`[i] OnePlus Clean-Up v…`)

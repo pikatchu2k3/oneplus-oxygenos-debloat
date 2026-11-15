@@ -28,10 +28,13 @@ German version: [README.de.md](README.de.md)
 - Optional AppOps step: blocks background execution and wake locks of five telemetry services
 - Full rollback at any time (menu 4, or the log file `eingefroren.log`)
 - Logs every freeze so a rollback also covers packages you froze individually
+- If the phone ignores a freeze (some OnePlus system apps, e.g. `com.heytap.browser`), menu 7 offers to remove the
+  package for the user instead — only after confirmation, reversible, logged in `entfernt.log`
 
 ## What it does not do
 
-- No uninstalling, no data wiping, no deleting of app data
+- No real uninstalling, no data wiping, no deleting of app data. The only exception is the confirmed per-user
+  removal in menu 7 (`pm uninstall -k --user 0`): the system copy and the app data stay on the phone
 - No root, no custom ROM, no firmware flashing
 - No DNS blocking — use the optional firewall blocklist below, or a NextDNS profile (chapter 6 in
   `docs/oneplus_cleanup.pdf`)
@@ -82,6 +85,8 @@ German version: [README.de.md](README.de.md)
   lists — this lets you skip 2 and 3 entirely. `?word` searches installed packages (e.g. `?heytap`; a bare `?`
   lists all, `[aus]` = frozen). The prompt stays open until you press Enter on an empty line. Only the system
   base (launcher, SystemUI, phone, settings) and the never-touch list cannot be frozen here, but they can be released.
+  If the phone ignores the freeze (answer `new state: default`), the script shows the answer and offers
+  `u` = **remove for the user** — the same method Canta uses. For a removed package, `f` brings it back.
 
 ## How “freezing” works
 
@@ -95,6 +100,19 @@ The package stays installed but is disabled for the current user. Undo:
 adb shell pm enable --user 0 <package>      :: what menu 4 does
 adb shell pm install-existing <package>     :: brings back something removed with Canta/ADB
 ```
+
+### When freezing does not work: removing for the user
+
+Some OnePlus system packages accept `pm disable-user` but stay enabled (`new state: default`). For those, menu 7
+offers, after confirmation:
+
+```bat
+adb shell pm uninstall -k --user 0 <package>          :: removes it for the user only
+adb shell pm install-existing --user 0 <package>      :: brings it back (menu 4, or menu 7 -> f)
+```
+
+The APK stays in the system partition and the app data is kept (`-k`); a factory reset restores it as well.
+Menu 1 shows such packages as `[entfernt]`, menu 8 reports if an update brought one back.
 
 A factory reset also restores everything.
 

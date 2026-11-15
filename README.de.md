@@ -30,10 +30,13 @@ English version: [README.md](README.md)
 - Optionaler AppOps-Schritt: sperrt Hintergrundausführung und Wakelocks von fünf Telemetrie-Diensten
 - Jederzeit vollständig rückgängig (Menüpunkt 4, oder über das Log `eingefroren.log`)
 - Protokolliert jedes Einfrieren, damit auch einzeln eingefrorene Pakete zurückkommen
+- Ignoriert das Telefon das Einfrieren (manche OnePlus-Systempakete, z. B. `com.heytap.browser`), bietet Menü 7
+  stattdessen an, das Paket für den Nutzer zu entfernen — nur nach Bestätigung, umkehrbar, protokolliert in `entfernt.log`
 
 ## Was es nicht macht
 
-- Kein Deinstallieren, kein Datenverlust, kein Löschen von App-Daten
+- Kein echtes Deinstallieren, kein Datenverlust, kein Löschen von App-Daten. Einzige Ausnahme ist das bestätigte
+  Entfernen für den Nutzer in Menü 7 (`pm uninstall -k --user 0`): Systemkopie und App-Daten bleiben auf dem Telefon
 - Kein Root, kein Custom-ROM, kein Flashen
 - Kein DNS-Blocking — dafür gibt es die optionale Firewall-Blockliste (siehe unten) oder ein NextDNS-Profil
   (Kapitel 6 in `docs/oneplus_cleanup.pdf`)
@@ -84,6 +87,8 @@ English version: [README.md](README.md)
   Pakete (z. B. `?heytap`, nur `?` listet alle, `[aus]` = eingefroren). Das Menü bleibt offen, bis man Enter
   ohne Eingabe drückt. Nur die System-Basis (Launcher, SystemUI, Telefon, Einstellungen) und die
   „Nie anfassen“-Liste lassen sich hier nicht einfrieren, wohl aber freigeben.
+  Ignoriert das Telefon das Einfrieren (Antwort `new state: default`), zeigt das Skript die Antwort und bietet
+  `u` = **für den Nutzer entfernen** an — derselbe Weg wie bei Canta. Bei entfernten Paketen holt `f` sie zurück.
 
 ## Wie „einfrieren“ funktioniert
 
@@ -97,6 +102,19 @@ Das Paket bleibt installiert, ist für den aktuellen Benutzer aber deaktiviert. 
 adb shell pm enable --user 0 <paket>      :: macht Menüpunkt 4
 adb shell pm install-existing <paket>     :: holt zurück, was mit Canta/ADB entfernt wurde
 ```
+
+### Wenn Einfrieren nicht geht: für den Nutzer entfernen
+
+Manche OnePlus-Systempakete nehmen `pm disable-user` an, bleiben aber aktiv (`new state: default`). Für sie bietet
+Menü 7 nach Bestätigung an:
+
+```bat
+adb shell pm uninstall -k --user 0 <paket>          :: entfernt es nur für den Nutzer
+adb shell pm install-existing --user 0 <paket>      :: holt es zurück (Menü 4 oder Menü 7 -> f)
+```
+
+Die APK bleibt in der Systempartition, die App-Daten bleiben erhalten (`-k`), ein Werksreset bringt es ebenfalls
+zurück. Menü 1 zeigt solche Pakete als `[entfernt]`, Menü 8 meldet, wenn ein Update eines zurückgebracht hat.
 
 Ein Werksreset stellt ebenfalls alles wieder her.
 

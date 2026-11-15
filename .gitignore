@@ -10,3 +10,7 @@ Thumbs.db
 desktop.ini
 *.swp
 .DS_Store
+entfernt.log
+opdb_pu.txt
+opdb_sd.txt
+opdb_tmp.txt
