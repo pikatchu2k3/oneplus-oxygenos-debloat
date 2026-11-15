@@ -1,9 +1,10 @@
 @echo off
 setlocal EnableDelayedExpansion
-title OnePlus Clean-Up - per ADB
+set "APP_VERSION=0.9.6-beta"
+title OnePlus Clean-Up v%APP_VERSION% - OxygenOS / ColorOS - per ADB
 color 0B
 REM ============================================================
-REM  OnePlus Clean-Up fuer Windows - Ersatz fuer Canta + App Manager
+REM  OnePlus Clean-Up fuer Windows (OxygenOS / ColorOS) - Ersatz fuer Canta + App Manager
 REM  "einfrieren" = pm disable-user --user 0   (nichts wird geloescht)
 REM  Rueckgaengig: Menuepunkt 4 oder 7.  Hilfe: ANLEITUNG-BAT.txt
 REM ============================================================
@@ -42,13 +43,14 @@ if !ND! GTR 1 (
 )
 for /f "delims=" %%m in ('adb shell getprop ro.product.model 2^>nul') do set "MODEL=%%m"
 for /f "delims=" %%v in ('adb shell getprop ro.build.version.release 2^>nul') do set "AVER=%%v"
+echo [i] OnePlus Clean-Up v%APP_VERSION%
 echo [i] Geraet: !MODEL!  (Android !AVER!)
 echo [i] Bildschirm entsperrt lassen, Kabel nicht ziehen.
 
 :menu
 echo.
 echo ============================================================
-echo   OnePlus Clean-Up
+echo   OnePlus Clean-Up  v%APP_VERSION%  (OxygenOS / ColorOS)
 echo ============================================================
 echo   1  UEBERSICHT     Was ist vorhanden/gesperrt (aendert nichts)
 echo   2  SICHER         71 Pakete einfrieren (alle oder selbst auswaehlen)
@@ -175,11 +177,18 @@ echo Kein Deinstallieren, nichts wird geloescht. Mit 6 rueckgaengig.
 call :confirm
 if /i not "%GO%"=="j" goto :menu
 echo.
+call :dump
+if errorlevel 1 goto :menu
+set /a OK=0
+set /a FAIL=0
+set /a SKIP=0
+set /a FROZ=0
 for %%p in (%APPOPS_LIST%) do (
-    call :setop %%p RUN_ANY_IN_BACKGROUND ignore
-    call :setop %%p RUN_IN_BACKGROUND ignore
-    call :setop %%p WAKE_LOCK ignore
+    for %%o in (RUN_ANY_IN_BACKGROUND RUN_IN_BACKGROUND WAKE_LOCK) do call :setop %%p %%o ignore
 )
+echo.
+echo Ergebnis: %OK% gesperrt, %FROZ% eingefroren ^(Sperre unnoetig^), %FAIL% vom Telefon abgelehnt, %SKIP% nicht vorhanden
+if %FAIL% GTR 0 call :refusedhint
 goto :done
 
 :status
@@ -188,13 +197,14 @@ echo STATUS - aendert nichts. Nach einem System-Update hier pruefen, ob alles no
 call :dump
 if errorlevel 1 goto :menu
 echo.
-echo --- APP-OPS (Menue 5) ---   [ok] = gesperrt, [OFFEN] = wieder erlaubt
+echo --- APP-OPS (Menue 5) ---   [ok] = gesperrt, [OFFEN] = nicht gesperrt
 set /a SOK=0
 set /a SOPEN=0
+set /a SMISS=0
 for %%p in (%APPOPS_LIST%) do (
     for %%o in (RUN_ANY_IN_BACKGROUND RUN_IN_BACKGROUND WAKE_LOCK) do call :getop %%p %%o
 )
-echo   %SOK% gesperrt, %SOPEN% offen
+echo   %SOK% gesperrt, %SOPEN% offen, %SMISS% nicht vorhanden
 echo.
 echo --- EINGEFROREN (Log eingefroren.log + Menue 2/3) ---
 set /a LOK=0
@@ -205,26 +215,68 @@ if exist "%~dp0eingefroren.log" (
 )
 if "%LOK%%LBACK%"=="00" echo   Kein Log vorhanden - dann zeigt Menue 1 den Stand der Listen.
 echo   %LOK% weiter eingefroren, %LBACK% wieder aktiv
-if %SOPEN% GTR 0 echo   Tipp: Menue 5 erneut ausfuehren.
+if %SOPEN% GTR 0 echo   Tipp: Menue 5 erneut ausfuehren. Steht dort "abgelehnt", Paket per Menue 7 einfrieren.
 if %LBACK% GTR 0 echo   Tipp: Menue 2/3 bzw. 7 erneut ausfuehren - Details: Menue 1.
 call :cleanup
 pause
 goto :menu
 
 :getop
-set "OPL="
-for /f "delims=" %%r in ('adb %DEVARG% shell cmd appops get %~1 %~2 2^>nul') do if not defined OPL set "OPL=%%r"
-if not defined OPL (
+call :haspkg %~1
+if not defined FOUND (
     echo   %~1  %~2  [nicht auf dem Geraet]
+    set /a SMISS+=1
     exit /b 0
 )
-if not "!OPL:ignore=!"=="!OPL!" (
+call :isfrozen %~1
+if defined FROZEN (
+    echo   %~1  %~2  [ok - eingefroren]
+    set /a SOK+=1
+    exit /b 0
+)
+call :readop %~1 %~2
+if "%OPSTATE%"=="ignore" (
     echo   %~1  %~2  [ok]
     set /a SOK+=1
 ) else (
     echo   %~1  %~2  [OFFEN]
+    echo       Telefon meldet:!OPRAW!
     set /a SOPEN+=1
 )
+exit /b 0
+
+:readop
+REM Liest den Modus eines App-Ops. Alle Zeilen werden ausgewertet: Android meldet
+REM getrennt "Uid mode: OP: ..." und "OP: ..." (Paket). Gesperrt, sobald eine Ebene ignore/deny ist.
+set "OPSTATE=offen"
+set "OPRAW="
+for /f "delims=" %%r in ('adb %DEVARG% shell cmd appops get %~1 %~2 2^>^&1') do (
+    set "OPL=%%r"
+    set "OPRAW=!OPRAW! %%r"
+    if not "!OPL:: ignore=!"=="!OPL!" set "OPSTATE=ignore"
+    if not "!OPL:: deny=!"=="!OPL!" set "OPSTATE=ignore"
+)
+if not defined OPRAW set "OPRAW= keine Ausgabe"
+exit /b 0
+
+:haspkg
+set "FOUND="
+for /f "usebackq delims=" %%r in ("%~dp0opdb_pk.txt") do if /i "%%r"=="package:%~1" set "FOUND=1"
+exit /b 0
+
+:isfrozen
+REM Eingefrorene Pakete laufen ueberhaupt nicht - eine App-Ops-Sperre ist dann unnoetig
+set "FROZEN="
+for /f "usebackq delims=" %%r in ("%~dp0opdb_pd.txt") do if /i "%%r"=="package:%~1" set "FROZEN=1"
+exit /b 0
+
+:refusedhint
+echo.
+echo "Abgelehnt" heisst: Das Telefon nimmt den Befehl an, speichert ihn aber nicht
+echo ^(Antwort "No operations"^). OnePlus schuetzt manche eigenen Systempakete so.
+echo Das laesst sich per ADB nicht erzwingen. Wirksame Alternative: das Paket ueber
+echo Menue 7 einfrieren - dann laeuft es gar nicht mehr, auch nicht im Hintergrund.
+echo Menue 4 holt es jederzeit zurueck.
 exit /b 0
 
 :chkfrozen
@@ -249,11 +301,17 @@ echo APP-OPS zuruecksetzen
 call :confirm
 if /i not "%GO%"=="j" goto :menu
 echo.
+call :dump
+if errorlevel 1 goto :menu
+set /a OK=0
+set /a FAIL=0
+set /a SKIP=0
+set /a FROZ=0
 for %%p in (%APPOPS_LIST%) do (
-    call :setop %%p RUN_ANY_IN_BACKGROUND default
-    call :setop %%p RUN_IN_BACKGROUND default
-    call :setop %%p WAKE_LOCK default
+    for %%o in (RUN_ANY_IN_BACKGROUND RUN_IN_BACKGROUND WAKE_LOCK) do call :setop %%p %%o default
 )
+echo.
+echo Ergebnis: %OK% zurueckgesetzt, %FAIL% nicht uebernommen, %SKIP% nicht vorhanden
 goto :done
 
 :single
@@ -429,6 +487,8 @@ if not defined ANDROIDOK (
     exit /b 1
 )
 for /f "delims=" %%r in ('adb %DEVARG% shell pm list packages -d') do >>"%~dp0opdb_pd.txt" echo %%r
+REM Ohne eingefrorene Pakete bleibt die Liste leer - Datei trotzdem anlegen, sonst "Datei nicht gefunden"
+if not exist "%~dp0opdb_pd.txt" type nul >"%~dp0opdb_pd.txt"
 exit /b 0
 
 :tag
@@ -490,8 +550,37 @@ set /a OK+=1
 exit /b 0
 
 :setop
+REM %1 Paket, %2 Op, %3 ignore/default. Prueft danach, ob der Wert wirklich gesetzt ist.
+call :haspkg %~1
+if not defined FOUND (
+    set /a SKIP+=1
+    exit /b 0
+)
+if /i "%~3"=="ignore" call :isfrozen %~1
+if /i "%~3"=="ignore" if defined FROZEN (
+    echo   [-]  %~1 %~2  eingefroren - Sperre unnoetig
+    set /a FROZ+=1
+    exit /b 0
+)
 adb %DEVARG% shell cmd appops set %~1 %~2 %~3 >nul 2>nul
-if not errorlevel 1 echo   [op] %~1 %~2 = %~3
+if /i "%~3"=="default" adb %DEVARG% shell cmd appops set --uid %~1 %~2 default >nul 2>nul
+call :readop %~1 %~2
+if /i "%~3"=="ignore" if not "%OPSTATE%"=="ignore" (
+    REM Manche Systeme werten nur den Modus der UID aus - dann dort setzen
+    adb %DEVARG% shell cmd appops set --uid %~1 %~2 ignore >nul 2>nul
+    call :readop %~1 %~2
+)
+set "OPGOOD="
+if /i "%~3"=="ignore" if "%OPSTATE%"=="ignore" set "OPGOOD=1"
+if /i "%~3"=="default" if not "%OPSTATE%"=="ignore" set "OPGOOD=1"
+if defined OPGOOD (
+    echo   [op] %~1 %~2 = %~3
+    set /a OK+=1
+) else (
+    echo   [X]  %~1 %~2  vom Telefon abgelehnt
+    echo        Telefon meldet:!OPRAW!
+    set /a FAIL+=1
+)
 exit /b 0
 
 :prep

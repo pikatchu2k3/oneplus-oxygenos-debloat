@@ -1,5 +1,40 @@
 # Changelog
 
+## v0.9.6-beta — pre-release
+
+- **Version display.** The version is shown in the window title, in a startup line (`[i] OnePlus Clean-Up v…`)
+  and in the menu header, so a user can tell at a glance which script they are running. It lives in one
+  place (`APP_VERSION` at the top of `oneplus_cleanup.bat` and `tools/template_bat.txt`).
+- **Renamed to "OnePlus OxygenOS & ColorOS Debloat".** The tool is also used on ColorOS; readmes, the
+  instructions, the window title and the menu header now say so. The pre-release banner no longer claims that
+  the script was never run on a device, and the known-limitations section reflects the real-device feedback.
+- No change to package lists or behaviour.
+
+## v0.9.5-beta — pre-release
+
+- **Menu 5/8: frozen packages and refused AppOps.** Real-device feedback showed `No operations` /
+  `Default mode: allow` for `statistics.rom`, `onetrace` and `postmanservice`: the phone accepts
+  `appops set` but stores nothing, on package and uid level. ADB cannot override this.
+  - Menu 5 skips packages that are already frozen (they cannot run, so the lock is unnecessary) and
+    counts them separately; menu 8 shows them as `[ok - eingefroren]`.
+  - Refusals are now labelled "vom Telefon abgelehnt", followed by an explanation and the advice to freeze
+    the package via menu 7 instead of re-running menu 5.
+- Tested in Wine against a stub that reproduces the exact device answer; not yet re-run on the device.
+
+## v0.9.4-beta — pre-release
+
+- **Fix menu 5/8: AppOps were reported as "OFFEN" although they were blocked.** The status check read only the
+  first output line of `cmd appops get`; Android prints a separate `Uid mode:` line first, so the package-level
+  `ignore` was never seen. All lines are evaluated now. Missing packages are reported as "not on the device"
+  instead of "OFFEN".
+- Menu 5 now reads every AppOp back after setting it, falls back to `appops set --uid` if the package mode does
+  not stick, and reports `[X]` with the phone's raw answer instead of always printing `[op]`. Menu 6 resets both
+  levels (package and uid).
+- Fix: with no frozen package yet, the temporary list of disabled packages was never created, so menus 1, 2, 3
+  and 8 printed "file not found" for every package. The file is now always created.
+- Tested in Wine against an `adb` stub with `Uid mode: …allow` plus package-level `ignore` (the reported bug),
+  missing packages and a package mode that does not stick; not yet on a device.
+
 ## v0.9.2-beta — pre-release
 
 - **Menu 2 and 3: pick your own packages.** Before freezing, choose `a` (all, as before) or `w` (choose):
