@@ -43,6 +43,9 @@ Falls SmartScreen warnt: „Weitere Informationen“ → „Trotzdem ausführen�
   „Sicher“ und „Optional“. `?wort` sucht installierte Pakete (z. B. `?heytap`, nur `?` = alle, `[aus]` = eingefroren).
   Bleibt offen für mehrere Pakete nacheinander; Enter ohne Eingabe = zurück zum Menü.
   „Nie anfassen“ und die System-Basis (Launcher, SystemUI, Telefon, Settings) lassen sich nur freigeben.
+  Lässt das Telefon ein Paket nicht einfrieren (z. B. den Browser `com.heytap.browser`, Antwort
+  „new state: default“), bietet [7] `u` = **für den Nutzer entfernen** an. Systemkopie und App-Daten bleiben
+  erhalten; zurück mit [4] oder [7] → Paketname → `f`.
 
 ## Was das Skript technisch macht
 - `pm disable-user --user 0 <paket>` = Paket **einfrieren**, nicht deinstallieren.
@@ -52,7 +55,9 @@ Falls SmartScreen warnt: „Weitere Informationen“ → „Trotzdem ausführen�
 - Beim Start wird geprüft, ob genau **ein** Gerät hängt; bei „unauthorized“ gibt es einen eigenen Hinweis.
 - Der `com.android.shell`-Trick (kurz deaktivieren, sofort wieder aktivieren) läuft **nur dann**, wenn ein
   Einfrieren fehlschlägt – OnePlus verweigert sonst das Deaktivieren („not allowed to disable“).
-- Jedes Einfrieren landet in `eingefroren.log`; Reset arbeitet diese Liste mit ab.
+- Jedes Einfrieren landet in `eingefroren.log`, jedes Entfernen in `entfernt.log`; Reset arbeitet beide ab.
+- Entfernen = `pm uninstall -k --user 0 <paket>` (wie Canta), zurück mit `pm install-existing --user 0 <paket>`.
+  Wird nur angeboten, wenn Einfrieren nicht klappt, und nur nach `u`.
 - Ein Werksreset holt ohnehin alles zurück.
 
 ## Wichtig: selbst mit Canta deinstallierte Apps
