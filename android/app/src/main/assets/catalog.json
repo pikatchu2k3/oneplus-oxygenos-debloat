@@ -1,0 +1,748 @@
+{
+ "version": 1,
+ "critical": [
+  "com.android.systemui",
+  "com.android.settings",
+  "com.android.launcher",
+  "com.android.launcher3",
+  "com.android.phone",
+  "com.android.shell",
+  "com.android.packageinstaller",
+  "com.google.android.packageinstaller"
+ ],
+ "appOpsPackages": [
+  "com.oplus.statistics.rom",
+  "com.oplus.logkit",
+  "com.oplus.onetrace",
+  "com.oplus.postmanservice",
+  "com.oplus.ocloud"
+ ],
+ "appOps": [
+  "RUN_ANY_IN_BACKGROUND",
+  "RUN_IN_BACKGROUND",
+  "WAKE_LOCK"
+ ],
+ "packages": [
+  {
+   "id": "android.autoinstalls.config.oneplus",
+   "list": "safe",
+   "name": "Auto-Install-Konfiguration",
+   "de": "Legt fest, welche Partner-Apps bei der Einrichtung automatisch installiert werden. Nach der Einrichtung ohne Nutzen.",
+   "en": "Defines which partner apps get installed automatically during setup. No use after setup."
+  },
+  {
+   "id": "com.android.egg",
+   "list": "safe",
+   "name": "Android Easter Egg",
+   "de": "Das versteckte Android-Spielchen (mehrfach auf die Android-Version tippen). Reine Spielerei.",
+   "en": "The hidden Android easter egg (tap the Android version repeatedly). Purely for fun."
+  },
+  {
+   "id": "com.android.email.partnerprovider",
+   "list": "safe",
+   "name": "E-Mail-Partnervorgaben",
+   "de": "Voreinstellungen von Partnern für die alte Android-E-Mail-App. Gmail und andere Mail-Apps brauchen das nicht.",
+   "en": "Partner presets for the legacy Android e-mail app. Gmail and other mail apps do not need it."
+  },
+  {
+   "id": "com.android.microdroid.empty_payload",
+   "list": "safe",
+   "name": "Microdroid-Platzhalter",
+   "de": "Leere Hülle für virtuelle Maschinen (Android Virtualization Framework). Im Alltag ohne Funktion.",
+   "en": "Empty payload for virtual machines (Android Virtualization Framework). No everyday function."
+  },
+  {
+   "id": "com.android.providers.partnerbookmarks",
+   "list": "safe",
+   "name": "Partner-Lesezeichen",
+   "de": "Liefert vorinstallierte Lesezeichen von Partnern an den Browser. Eigene Lesezeichen bleiben erhalten.",
+   "en": "Supplies pre-installed partner bookmarks to the browser. Your own bookmarks are kept."
+  },
+  {
+   "id": "com.android.systemui.accessibility.accessibilitymenu",
+   "list": "safe",
+   "name": "Bedienungshilfen-Menü",
+   "de": "Großes Bildschirmmenü für Menschen mit eingeschränkter Motorik. Nur einfrieren, wenn du es nicht nutzt.",
+   "en": "Large on-screen menu for people with limited dexterity. Only freeze it if you do not use it."
+  },
+  {
+   "id": "com.android.traceur",
+   "list": "safe",
+   "name": "System-Tracing",
+   "de": "Entwicklerwerkzeug zum Aufzeichnen von System-Traces. Für normale Nutzung nicht nötig.",
+   "en": "Developer tool for recording system traces. Not needed for normal use."
+  },
+  {
+   "id": "com.coloros.accessibilityassistant",
+   "list": "safe",
+   "name": "Bedienungshilfen-Assistent",
+   "de": "Zusätzliche Bedienungshilfen von OnePlus/OPPO. Nur einfrieren, wenn du keine Bedienungshilfen nutzt.",
+   "en": "Additional accessibility helpers from OnePlus/OPPO. Only freeze it if you use no accessibility features."
+  },
+  {
+   "id": "com.coloros.activation",
+   "list": "safe",
+   "name": "Geräteaktivierung",
+   "de": "Meldet das Gerät einmalig beim Hersteller an (Garantie-Aktivierung). Nach der Einrichtung nicht mehr nötig.",
+   "en": "Registers the device once with the vendor (warranty activation). Not needed after setup."
+  },
+  {
+   "id": "com.coloros.childrenspace",
+   "list": "safe",
+   "name": "Kinderbereich",
+   "de": "Der Kindermodus mit eingeschränkten Apps und Zeitlimit. Ohne ihn fehlt nur dieser Modus.",
+   "en": "Kids mode with restricted apps and time limits. Without it only that mode is gone."
+  },
+  {
+   "id": "com.coloros.colordirectservice",
+   "list": "safe",
+   "name": "Smart-Text-Erkennung",
+   "de": "Erkennt Text auf dem Bildschirm und schlägt Aktionen vor (z. B. Adresse öffnen).",
+   "en": "Recognises on-screen text and suggests actions (e.g. open an address)."
+  },
+  {
+   "id": "com.coloros.floatassistant",
+   "list": "safe",
+   "name": "Schwebender Assistent",
+   "de": "Der verschiebbare Assistenz-Ball mit Schnellaktionen. Ohne ihn fehlt nur dieser Ball.",
+   "en": "The floating assistive ball with quick actions. Without it only that ball is gone."
+  },
+  {
+   "id": "com.coloros.ocs.opencapabilityservice",
+   "list": "safe",
+   "name": "Open Capability Service",
+   "de": "Schnittstelle, über die Hersteller-Apps Kamera- und Medienfunktionen teilen. Für Dritt-Apps selten nötig.",
+   "en": "Interface through which vendor apps share camera and media features. Rarely needed by third-party apps."
+  },
+  {
+   "id": "com.coloros.operationManual",
+   "list": "safe",
+   "name": "Benutzerhandbuch",
+   "de": "Die eingebaute Bedienungsanleitung und Tipps-App.",
+   "en": "The built-in user manual and tips app."
+  },
+  {
+   "id": "com.coloros.video",
+   "list": "safe",
+   "name": "Hersteller-Videoplayer",
+   "de": "Der vorinstallierte Videoplayer. Videos lassen sich weiter mit Fotos-App oder anderen Playern abspielen.",
+   "en": "The pre-installed video player. Videos still open in the photos app or other players."
+  },
+  {
+   "id": "com.facebook.appmanager",
+   "list": "safe",
+   "name": "Facebook App Manager",
+   "de": "Hält vorinstallierte Facebook-Apps im Hintergrund aktuell. Facebook aus dem Play Store funktioniert auch ohne.",
+   "en": "Keeps pre-installed Facebook apps updated in the background. Facebook from the Play Store works without it."
+  },
+  {
+   "id": "com.facebook.services",
+   "list": "safe",
+   "name": "Facebook Services",
+   "de": "Hintergrunddienst für vorinstallierte Facebook-Apps. Sammelt Daten, auch wenn Facebook nicht genutzt wird.",
+   "en": "Background service for pre-installed Facebook apps. Collects data even when Facebook is not used."
+  },
+  {
+   "id": "com.facebook.system",
+   "list": "safe",
+   "name": "Facebook App Installer",
+   "de": "Installiert und aktualisiert Facebook-Apps am Play Store vorbei.",
+   "en": "Installs and updates Facebook apps outside the Play Store."
+  },
+  {
+   "id": "com.google.ambient.streaming",
+   "list": "safe",
+   "name": "Google Geräteübergreifende Dienste",
+   "de": "Streamt Apps zwischen Telefon und Chromebook. Ohne Chromebook ohne Nutzen.",
+   "en": "Streams apps between phone and Chromebook. No use without a Chromebook."
+  },
+  {
+   "id": "com.google.android.accessibility.switchaccess",
+   "list": "safe",
+   "name": "Schalterzugriff",
+   "de": "Bedienung des Telefons über externe Schalter. Nur einfrieren, wenn du das nicht brauchst.",
+   "en": "Controls the phone with external switches. Only freeze it if you do not need that."
+  },
+  {
+   "id": "com.google.android.adservices.api",
+   "list": "safe",
+   "name": "Android-Werbedienste",
+   "de": "Googles „Privacy Sandbox“: Werbe-Themen und Anzeigenmessung auf dem Gerät.",
+   "en": "Google's Privacy Sandbox: ad topics and ad measurement on the device."
+  },
+  {
+   "id": "com.google.android.apps.nbu.files",
+   "list": "safe",
+   "name": "Files by Google",
+   "de": "Googles Dateimanager. Der Hersteller-Dateimanager bleibt; Downloads öffnen sich dann dort.",
+   "en": "Google's file manager. The vendor file manager stays; downloads open there instead."
+  },
+  {
+   "id": "com.google.android.apps.restore",
+   "list": "safe",
+   "name": "Google Datenwiederherstellung",
+   "de": "Überträgt Daten vom alten Telefon bei der Einrichtung. Danach nicht mehr nötig.",
+   "en": "Transfers data from the old phone during setup. Not needed afterwards."
+  },
+  {
+   "id": "com.google.android.apps.safetyhub",
+   "list": "safe",
+   "name": "Persönliche Sicherheit",
+   "de": "Notfall-SOS-Zusatzfunktionen, Unfallerkennung und Sicherheitscheck von Google. Der normale Notruf bleibt.",
+   "en": "Google's emergency SOS extras, crash detection and safety check. Normal emergency calls still work."
+  },
+  {
+   "id": "com.google.android.apps.tachyon",
+   "list": "safe",
+   "name": "Google Meet",
+   "de": "Googles Videotelefonie (früher Duo). Ohne sie fehlt der Videoanruf-Knopf in der Telefon-App.",
+   "en": "Google's video calling (formerly Duo). Without it the video call button in the phone app is gone."
+  },
+  {
+   "id": "com.google.android.apps.wellbeing",
+   "list": "safe",
+   "name": "Digital Wellbeing",
+   "de": "Bildschirmzeit, App-Timer, Schlafenszeitmodus. Ohne sie fehlen diese Statistiken und Limits.",
+   "en": "Screen time, app timers, bedtime mode. Without it those statistics and limits are gone."
+  },
+  {
+   "id": "com.google.android.as.oss",
+   "list": "safe",
+   "name": "Private Compute Services",
+   "de": "Netzwerk-Brücke für Android System Intelligence (z. B. Updates für Smart Reply).",
+   "en": "Network bridge for Android System Intelligence (e.g. updates for Smart Reply)."
+  },
+  {
+   "id": "com.google.android.federatedcompute",
+   "list": "safe",
+   "name": "Federated Compute",
+   "de": "Trainiert Googles Modelle mit Daten auf dem Gerät (Privacy Sandbox).",
+   "en": "Trains Google's models with on-device data (Privacy Sandbox)."
+  },
+  {
+   "id": "com.google.android.gms.location.history",
+   "list": "safe",
+   "name": "Standortverlauf",
+   "de": "Die Zeitachse/Standortverlauf-Komponente der Google-Dienste. Navigation funktioniert weiter.",
+   "en": "The timeline / location history component of Google services. Navigation keeps working."
+  },
+  {
+   "id": "com.google.android.gms.supervision",
+   "list": "safe",
+   "name": "Elternaufsicht (Family Link)",
+   "de": "Kinderkonto-Aufsicht von Google. Nicht einfrieren, wenn das Telefon per Family Link verwaltet wird.",
+   "en": "Google's child account supervision. Do not freeze it if the phone is managed with Family Link."
+  },
+  {
+   "id": "com.google.android.ondevicepersonalization.services",
+   "list": "safe",
+   "name": "On-Device-Personalisierung",
+   "de": "Personalisiert Inhalte und Werbung auf dem Gerät (Privacy Sandbox).",
+   "en": "Personalises content and ads on the device (Privacy Sandbox)."
+  },
+  {
+   "id": "com.google.ar.core",
+   "list": "safe",
+   "name": "Google Play-Dienste für AR",
+   "de": "Augmented Reality für Apps wie Maps Live View oder Maßband-Apps. Ohne sie funktionieren AR-Apps nicht.",
+   "en": "Augmented reality for apps such as Maps Live View or measuring apps. AR apps stop working without it."
+  },
+  {
+   "id": "com.google.ar.lens",
+   "list": "safe",
+   "name": "Google Lens",
+   "de": "Bild- und Texterkennung über die Kamera. Ohne sie fehlt Lens in Kamera, Fotos und Suche.",
+   "en": "Image and text recognition through the camera. Without it Lens is gone from camera, photos and search."
+  },
+  {
+   "id": "com.google.mainline.adservices",
+   "list": "safe",
+   "name": "Werbedienste (Systemmodul)",
+   "de": "Das Systemmodul hinter den Android-Werbediensten (Privacy Sandbox).",
+   "en": "The system module behind the Android ad services (Privacy Sandbox)."
+  },
+  {
+   "id": "com.heytap.browser",
+   "list": "safe",
+   "name": "Hersteller-Browser",
+   "de": "Der vorinstallierte Internet-Browser mit News-Feed. Vorher einen anderen Browser als Standard festlegen. Manche Geräte lassen ihn nicht einfrieren – dann bietet die App „Entfernen“ an.",
+   "en": "The pre-installed browser with a news feed. Set another browser as default first. Some devices refuse to freeze it – the app then offers “remove”."
+  },
+  {
+   "id": "com.heytap.colorfulengine",
+   "list": "safe",
+   "name": "Design-Engine",
+   "de": "Lädt Online-Designs und Schriften aus dem Theme-Store. Das aktuelle Design bleibt.",
+   "en": "Loads online themes and fonts from the theme store. Your current theme stays."
+  },
+  {
+   "id": "com.heytap.mydevices",
+   "list": "safe",
+   "name": "Meine Geräte",
+   "de": "Verwaltet verbundenes Hersteller-Zubehör (Kopfhörer, Uhr) über das Konto.",
+   "en": "Manages connected vendor accessories (earbuds, watch) through the account."
+  },
+  {
+   "id": "com.heytap.yoli",
+   "list": "safe",
+   "name": "Video-Feed",
+   "de": "Kurzvideo- und Empfehlungs-Feed des Herstellers.",
+   "en": "The vendor's short video and recommendation feed."
+  },
+  {
+   "id": "com.microsoft.appmanager",
+   "list": "safe",
+   "name": "Link zu Windows",
+   "de": "Verbindet das Telefon mit „Smartphone-Link“ unter Windows. Ohne sie geht diese Kopplung nicht.",
+   "en": "Connects the phone to “Phone Link” on Windows. That pairing stops working without it."
+  },
+  {
+   "id": "com.microsoft.deviceintegrationservice",
+   "list": "safe",
+   "name": "Microsoft-Geräteintegration",
+   "de": "Systemdienst für „Link zu Windows“ (Bildschirm spiegeln, Zwischenablage).",
+   "en": "System service for “Link to Windows” (screen mirroring, clipboard)."
+  },
+  {
+   "id": "com.microsoftsdk.crossdeviceservicebroker",
+   "list": "safe",
+   "name": "Microsoft Cross-Device-Dienst",
+   "de": "Vermittlungsdienst für die Windows-Kopplung.",
+   "en": "Broker service for the Windows pairing."
+  },
+  {
+   "id": "com.oneplus.oshare",
+   "list": "safe",
+   "name": "O+ Connect / OnePlus Share",
+   "de": "Dateiaustausch mit PC und anderen Geräten in der Nähe. Quick Share von Google bleibt.",
+   "en": "File sharing with PCs and nearby devices. Google's Quick Share stays."
+  },
+  {
+   "id": "com.oplus.aicall",
+   "list": "safe",
+   "name": "KI-Anrufassistent",
+   "de": "KI-Funktionen für Anrufe (Zusammenfassung, Übersetzung). Telefonieren selbst funktioniert weiter.",
+   "en": "AI features for calls (summary, translation). Calling itself keeps working."
+  },
+  {
+   "id": "com.oplus.aimemory",
+   "list": "safe",
+   "name": "KI-Gedächtnis (Mind Space)",
+   "de": "Sammelt Bildschirminhalte für KI-Notizen und Erinnerungen.",
+   "en": "Collects screen content for AI notes and reminders."
+  },
+  {
+   "id": "com.oplus.aiwriter",
+   "list": "safe",
+   "name": "KI-Schreibassistent",
+   "de": "KI-Textvorschläge und Umformulierungen in Eingabefeldern.",
+   "en": "AI text suggestions and rewriting in text fields."
+  },
+  {
+   "id": "com.oplus.bttestmode",
+   "list": "safe",
+   "name": "Bluetooth-Testmodus",
+   "de": "Werkstatt-Testwerkzeug für Bluetooth. Normales Bluetooth ist nicht betroffen.",
+   "en": "Factory test tool for Bluetooth. Normal Bluetooth is not affected."
+  },
+  {
+   "id": "com.oplus.engineercamera",
+   "list": "safe",
+   "name": "Kamera-Testmodus",
+   "de": "Werkstatt-Testwerkzeug für die Kamera. Die normale Kamera ist nicht betroffen.",
+   "en": "Factory test tool for the camera. The normal camera is not affected."
+  },
+  {
+   "id": "com.oplus.engineermode",
+   "list": "safe",
+   "name": "Ingenieurmodus",
+   "de": "Service-Menü für Werkstatt-Tests (Geheimcodes in der Telefon-App). Im Alltag nicht nötig.",
+   "en": "Service menu for factory tests (secret codes in the dialer). Not needed day to day."
+  },
+  {
+   "id": "com.oplus.engineernetwork",
+   "list": "safe",
+   "name": "Netzwerk-Testmodus",
+   "de": "Werkstatt-Testwerkzeug für Mobilfunk. Normales Netz ist nicht betroffen.",
+   "en": "Factory test tool for mobile networks. Normal connectivity is not affected."
+  },
+  {
+   "id": "com.oplus.games",
+   "list": "safe",
+   "name": "Spiele / Game Space",
+   "de": "Spiele-Übersicht mit Leistungsmodus und Einblendungen im Spiel. Spiele laufen auch ohne.",
+   "en": "Games hub with performance mode and in-game overlays. Games run without it."
+  },
+  {
+   "id": "com.oplus.lfeh",
+   "list": "safe",
+   "name": "lfeh",
+   "de": "Interner Dienst des Herstellers; die genaue Aufgabe ist nicht öffentlich dokumentiert. Steht auf der Liste des Skripts. Falls danach etwas fehlt: einfach wieder freigeben.",
+   "en": "Internal vendor service; its exact job is not publicly documented. It is on the script's list. If something is missing afterwards, just release it again."
+  },
+  {
+   "id": "com.oplus.location",
+   "list": "safe",
+   "name": "Hersteller-Standortdienst",
+   "de": "Zusätzlicher Standortdienst des Herstellers. GPS und Google-Standort funktionieren weiter.",
+   "en": "Additional vendor location service. GPS and Google location keep working."
+  },
+  {
+   "id": "com.oplus.logkit",
+   "list": "safe",
+   "name": "Log-Kit (Fehlerprotokolle)",
+   "de": "Sammelt System-Protokolle für Fehlerberichte an den Hersteller.",
+   "en": "Collects system logs for bug reports to the vendor."
+  },
+  {
+   "id": "com.oplus.metis",
+   "list": "safe",
+   "name": "Metis",
+   "de": "Interner Dienst des Herstellers; die genaue Aufgabe ist nicht öffentlich dokumentiert. Steht auf der Liste des Skripts. Falls danach etwas fehlt: einfach wieder freigeben.",
+   "en": "Internal vendor service; its exact job is not publicly documented. It is on the script's list. If something is missing afterwards, just release it again."
+  },
+  {
+   "id": "com.oplus.obrain",
+   "list": "safe",
+   "name": "OBrain",
+   "de": "Lernt das Nutzungsverhalten für „smarte“ Vorschläge des Systems.",
+   "en": "Learns usage behaviour for the system's “smart” suggestions."
+  },
+  {
+   "id": "com.oplus.onetrace",
+   "list": "safe",
+   "name": "OneTrace (Telemetrie)",
+   "de": "Zeichnet Leistungs- und Nutzungsdaten für den Hersteller auf.",
+   "en": "Records performance and usage data for the vendor."
+  },
+  {
+   "id": "com.oplus.postmanservice",
+   "list": "safe",
+   "name": "Postman-Dienst (Telemetrie)",
+   "de": "Überträgt gesammelte Diagnose- und Nutzungsdaten an den Hersteller.",
+   "en": "Uploads collected diagnostic and usage data to the vendor."
+  },
+  {
+   "id": "com.oplus.remotecontrol",
+   "list": "safe",
+   "name": "Fernwartung",
+   "de": "Erlaubt dem Hersteller-Support den Fernzugriff bei einer Support-Sitzung.",
+   "en": "Lets vendor support access the phone remotely during a support session."
+  },
+  {
+   "id": "com.oplus.statistics.rom",
+   "list": "safe",
+   "name": "Nutzungsstatistik (Telemetrie)",
+   "de": "Sammelt Nutzungsstatistiken des Systems für den Hersteller.",
+   "en": "Collects system usage statistics for the vendor."
+  },
+  {
+   "id": "com.oplus.vdc",
+   "list": "safe",
+   "name": "vdc",
+   "de": "Interner Dienst des Herstellers; die genaue Aufgabe ist nicht öffentlich dokumentiert. Steht auf der Liste des Skripts. Falls danach etwas fehlt: einfach wieder freigeben.",
+   "en": "Internal vendor service; its exact job is not publicly documented. It is on the script's list. If something is missing afterwards, just release it again."
+  },
+  {
+   "id": "com.oplus.wifibackuprestore",
+   "list": "safe",
+   "name": "WLAN-Sicherung",
+   "de": "Sichert WLAN-Zugangsdaten für den Umzug auf ein anderes Hersteller-Gerät.",
+   "en": "Backs up Wi-Fi credentials for moving to another device of the vendor."
+  },
+  {
+   "id": "com.oppo.quicksearchbox",
+   "list": "safe",
+   "name": "Globale Suche",
+   "de": "Die Suche beim Wischen nach unten auf dem Startbildschirm (mit Online-Vorschlägen).",
+   "en": "The search you get by swiping down on the home screen (with online suggestions)."
+  },
+  {
+   "id": "com.qti.dcf",
+   "list": "safe",
+   "name": "Qualcomm DCF",
+   "de": "Interner Dienst des Herstellers; die genaue Aufgabe ist nicht öffentlich dokumentiert. Steht auf der Liste des Skripts. Falls danach etwas fehlt: einfach wieder freigeben.",
+   "en": "Internal vendor service; its exact job is not publicly documented. It is on the script's list. If something is missing afterwards, just release it again."
+  },
+  {
+   "id": "com.qti.qcc",
+   "list": "safe",
+   "name": "Qualcomm QCC (Diagnose)",
+   "de": "Qualcomm-Dienst, der Diagnose- und Nutzungsdaten des Chipsatzes sammelt.",
+   "en": "Qualcomm service that collects chipset diagnostic and usage data."
+  },
+  {
+   "id": "com.qualcomm.qti.qms.service.trustzoneaccess",
+   "list": "safe",
+   "name": "Qualcomm TrustZone-Zugriff",
+   "de": "Hilfsdienst für Qualcomm-Diagnose in der sicheren Umgebung. Fingerabdruck und Bezahlen nutzen ihn nicht.",
+   "en": "Helper for Qualcomm diagnostics in the secure environment. Fingerprint and payments do not use it."
+  },
+  {
+   "id": "com.qualcomm.qti.xrcb",
+   "list": "safe",
+   "name": "Qualcomm XR (Brillen)",
+   "de": "Unterstützung für XR-/VR-Brillen. Ohne solche Brille ohne Nutzen.",
+   "en": "Support for XR/VR glasses. No use without such glasses."
+  },
+  {
+   "id": "com.qualcomm.qti.xrvd.service",
+   "list": "safe",
+   "name": "Qualcomm XR-Anzeigedienst",
+   "de": "Virtuelles Display für XR-/VR-Brillen. Ohne solche Brille ohne Nutzen.",
+   "en": "Virtual display for XR/VR glasses. No use without such glasses."
+  },
+  {
+   "id": "com.qualcomm.uimremoteclient",
+   "list": "safe",
+   "name": "SIM-Fernzugriff (Client)",
+   "de": "Teilt die SIM-Karte mit anderen Geräten (z. B. Autotelefon mit rSAP). Selten genutzt.",
+   "en": "Shares the SIM card with other devices (e.g. car phones using rSAP). Rarely used."
+  },
+  {
+   "id": "com.qualcomm.uimremoteserver",
+   "list": "safe",
+   "name": "SIM-Fernzugriff (Server)",
+   "de": "Gegenstück zum SIM-Fernzugriff. Nur für rSAP-Autotelefone relevant.",
+   "en": "Counterpart of the SIM remote access. Only relevant for rSAP car phones."
+  },
+  {
+   "id": "com.wapi.wapicertmanage",
+   "list": "safe",
+   "name": "WAPI-Zertifikate",
+   "de": "Zertifikatsverwaltung für den chinesischen WLAN-Standard WAPI. In Europa ohne Nutzen.",
+   "en": "Certificate manager for the Chinese Wi-Fi standard WAPI. No use in Europe."
+  },
+  {
+   "id": "net.oneplus.weather",
+   "list": "safe",
+   "name": "OnePlus Wetter",
+   "de": "Die Wetter-App samt Widget. Ohne sie bleibt das Wetter-Widget leer.",
+   "en": "The weather app and its widget. Without it the weather widget stays empty."
+  },
+  {
+   "id": "com.android.chrome",
+   "list": "optional",
+   "name": "Chrome",
+   "de": "Googles Browser. Nur einfrieren, wenn ein anderer Browser installiert und als Standard gesetzt ist.",
+   "en": "Google's browser. Only freeze it if another browser is installed and set as default."
+  },
+  {
+   "id": "com.android.hotwordenrollment.okgoogle",
+   "list": "optional",
+   "name": "„Ok Google“-Erkennung",
+   "de": "Hört auf das Aktivierungswort „Ok Google“. Ohne sie startet der Assistant nur noch per Taste.",
+   "en": "Listens for the “Ok Google” hotword. Without it the Assistant only starts by button."
+  },
+  {
+   "id": "com.android.hotwordenrollment.xgoogle",
+   "list": "optional",
+   "name": "„Hey Google“-Erkennung",
+   "de": "Hört auf das Aktivierungswort „Hey Google“. Ohne sie startet der Assistant nur noch per Taste.",
+   "en": "Listens for the “Hey Google” hotword. Without it the Assistant only starts by button."
+  },
+  {
+   "id": "com.coloros.scenemode",
+   "list": "optional",
+   "name": "Szenenmodi / Fokusmodus",
+   "de": "Automatische Modi wie Fokus, Fahren oder Schlafen. Ohne sie fehlen diese Automatiken.",
+   "en": "Automatic modes such as focus, driving or sleep. Without it those automations are gone."
+  },
+  {
+   "id": "com.coloros.smartsidebar",
+   "list": "optional",
+   "name": "Smarte Seitenleiste",
+   "de": "Die ausziehbare Leiste am Bildschirmrand mit App-Verknüpfungen.",
+   "en": "The pull-out bar at the screen edge with app shortcuts."
+  },
+  {
+   "id": "com.google.android.apps.photos",
+   "list": "optional",
+   "name": "Google Fotos",
+   "de": "Googles Foto-App mit Cloud-Sicherung. Vorher prüfen, ob Fotos gesichert sind und eine andere Galerie da ist.",
+   "en": "Google's photo app with cloud backup. Check first that your photos are backed up and another gallery exists."
+  },
+  {
+   "id": "com.google.android.odad",
+   "list": "optional",
+   "name": "Google Play Protect-Dienst",
+   "de": "Erkennt schädliches App-Verhalten auf dem Gerät. Einfrieren verringert den Schutz vor Schad-Apps.",
+   "en": "Detects harmful app behaviour on the device. Freezing it reduces protection against malicious apps."
+  },
+  {
+   "id": "com.google.android.projection.gearhead",
+   "list": "optional",
+   "name": "Android Auto",
+   "de": "Verbindet das Telefon mit dem Auto-Display. Ohne sie funktioniert Android Auto nicht.",
+   "en": "Connects the phone to the car display. Android Auto stops working without it."
+  },
+  {
+   "id": "com.heytap.mcs",
+   "list": "optional",
+   "name": "Hersteller-Push-Dienst",
+   "de": "Push-Benachrichtigungen für Hersteller-Apps (z. B. Konto, Store). Apps aus dem Play Store nutzen Google-Push.",
+   "en": "Push notifications for vendor apps (e.g. account, store). Play Store apps use Google push."
+  },
+  {
+   "id": "com.oneplus.account",
+   "list": "optional",
+   "name": "OnePlus-Konto",
+   "de": "Das OnePlus-Konto mit Cloud, Community und Garantie-Infos. Ohne sie funktioniert die Anmeldung nicht.",
+   "en": "The OnePlus account with cloud, community and warranty info. Signing in stops working without it."
+  },
+  {
+   "id": "com.oplus.customize.coreapp",
+   "list": "optional",
+   "name": "Anbieter-Anpassungen",
+   "de": "Spielt Anpassungen von Mobilfunkanbieter oder Region ein. Auf freien Geräten meist ohne Wirkung.",
+   "en": "Applies carrier or region customisations. Usually without effect on unlocked devices."
+  },
+  {
+   "id": "com.oplus.dmp",
+   "list": "optional",
+   "name": "Geräteinterne Suche (DMP)",
+   "de": "Indexiert Inhalte auf dem Gerät für die Suche in Einstellungen, Galerie und Dateien. Ohne sie findet die Suche weniger.",
+   "en": "Indexes on-device content for search in settings, gallery and files. Search finds less without it."
+  },
+  {
+   "id": "com.oplus.eid",
+   "list": "optional",
+   "name": "eID / elektronischer Ausweis",
+   "de": "Ausweisfunktion über NFC (v. a. für chinesische eID). Vor dem Einfrieren prüfen, ob eine Ausweis-App sie braucht.",
+   "en": "ID function over NFC (mainly Chinese eID). Check first whether an ID app needs it."
+  },
+  {
+   "id": "com.oplus.encryption",
+   "list": "optional",
+   "name": "Privater Safe",
+   "de": "Der verschlüsselte Bereich für Fotos und Dateien. ACHTUNG: Solange er eingefroren ist, kommst du nicht an den Inhalt – vorher alles herauskopieren.",
+   "en": "The encrypted vault for photos and files. WARNING: while frozen you cannot reach its content – copy everything out first."
+  },
+  {
+   "id": "com.oplus.healthservice",
+   "list": "optional",
+   "name": "Schrittzähler / Gesundheitsdienst",
+   "de": "Zählt Schritte und liefert Bewegungsdaten an Gesundheits-Apps des Herstellers.",
+   "en": "Counts steps and feeds movement data to the vendor's health apps."
+  },
+  {
+   "id": "com.oplus.stdsp",
+   "list": "optional",
+   "name": "stdsp",
+   "de": "Interner Dienst des Herstellers; die genaue Aufgabe ist nicht öffentlich dokumentiert. Steht auf der Liste des Skripts. Falls danach etwas fehlt: einfach wieder freigeben.",
+   "en": "Internal vendor service; its exact job is not publicly documented. It is on the script's list. If something is missing afterwards, just release it again."
+  },
+  {
+   "id": "com.qualcomm.atfwd",
+   "list": "optional",
+   "name": "Qualcomm AT-Weiterleitung",
+   "de": "Leitet Modem-Befehle weiter, u. a. für Wireless Display (Miracast). Ohne sie kann Bildschirmübertragung ausfallen.",
+   "en": "Forwards modem commands, e.g. for wireless display (Miracast). Screen casting may fail without it."
+  },
+  {
+   "id": "com.qualcomm.location",
+   "list": "optional",
+   "name": "Qualcomm-Standortdienst",
+   "de": "Qualcomms Standort-Zusatzdienst (schnellere Ortung, sendet Daten an Qualcomm). GPS funktioniert weiter, evtl. langsamer.",
+   "en": "Qualcomm's location add-on (faster fix, sends data to Qualcomm). GPS keeps working, possibly slower."
+  },
+  {
+   "id": "com.qualcomm.qti.powersavemode",
+   "list": "optional",
+   "name": "Qualcomm-Energiesparmodus",
+   "de": "Zusatz für den Energiesparmodus des Chipsatzes. Der normale Energiesparmodus bleibt.",
+   "en": "Add-on for the chipset's power saving. The normal battery saver stays."
+  },
+  {
+   "id": "com.google.android.apps.work.clouddpc",
+   "list": "optional",
+   "name": "Android Device Policy",
+   "de": "Richtet Arbeitsprofile ein (Firmen-Verwaltung, Intune). NICHT einfrieren, wenn das Telefon ein Arbeitsprofil hat.",
+   "en": "Sets up work profiles (company management, Intune). Do NOT freeze it if the phone has a work profile."
+  },
+  {
+   "id": "com.qualcomm.qti.uimGbaApp",
+   "list": "optional",
+   "name": "SIM-Authentifizierung (GBA)",
+   "de": "Baustein für die Anmeldung bei Anbieter-Diensten wie WLAN-Telefonie. Wenn WLAN-Anrufe danach ausfallen: wieder freigeben.",
+   "en": "Building block for signing in to carrier services such as Wi-Fi calling. If Wi-Fi calls fail afterwards, release it."
+  },
+  {
+   "id": "com.google.android.healthconnect.controller",
+   "list": "optional",
+   "name": "Health Connect",
+   "de": "Zentrale Ablage für Gesundheitsdaten, die Fitness-Apps untereinander teilen. Ohne sie tauschen Fitness-Apps keine Daten aus.",
+   "en": "Central store for health data shared between fitness apps. Without it fitness apps cannot exchange data."
+  },
+  {
+   "id": "com.oplus.locationproxy",
+   "list": "optional",
+   "name": "Standort-Proxy",
+   "de": "Vermittelt Standortanfragen des Systems. Wenn die Ortung danach hakt: wieder freigeben.",
+   "en": "Relays the system's location requests. If positioning misbehaves afterwards, release it."
+  },
+  {
+   "id": "com.google.android.apps.messaging",
+   "list": "never",
+   "name": "Google Messages",
+   "de": "SMS und RCS. Ohne sie kommen keine SMS mehr an (auch keine TANs und Codes).",
+   "en": "SMS and RCS. Without it no text messages arrive (including one-time codes)."
+  },
+  {
+   "id": "com.google.android.calendar",
+   "list": "never",
+   "name": "Google Kalender",
+   "de": "Der Kalender samt Erinnerungen und Synchronisierung.",
+   "en": "The calendar with reminders and sync."
+  },
+  {
+   "id": "com.google.android.contacts",
+   "list": "never",
+   "name": "Kontakte",
+   "de": "Das Adressbuch. Telefon-App und Messenger greifen darauf zu.",
+   "en": "The address book. The phone app and messengers rely on it."
+  },
+  {
+   "id": "com.google.android.dialer",
+   "list": "never",
+   "name": "Telefon",
+   "de": "Die Telefon-App. Ohne sie sind keine Anrufe möglich – auch kein Notruf.",
+   "en": "The phone app. Without it no calls are possible – not even emergency calls."
+  },
+  {
+   "id": "com.google.android.gm",
+   "list": "never",
+   "name": "Gmail",
+   "de": "Die Mail-App; liefert auch Konto-Benachrichtigungen von Google.",
+   "en": "The mail app; also delivers Google account notifications."
+  },
+  {
+   "id": "com.google.android.inputmethod.latin",
+   "list": "never",
+   "name": "Gboard (Tastatur)",
+   "de": "Die Bildschirmtastatur. Ohne Tastatur lässt sich nicht einmal mehr die PIN eingeben.",
+   "en": "The on-screen keyboard. Without a keyboard you cannot even enter your PIN."
+  },
+  {
+   "id": "com.google.android.overlay.modules.healthfitness.forframework",
+   "list": "never",
+   "name": "Health-Connect-Systemoverlay",
+   "de": "Systembaustein, den Android beim Start erwartet. Einfrieren kann zu Startproblemen führen.",
+   "en": "System component Android expects at boot. Freezing it can cause boot problems."
+  },
+  {
+   "id": "com.oplus.powermonitor",
+   "list": "never",
+   "name": "Energieüberwachung",
+   "de": "Überwacht Akku und Stromverbrauch; Teil der Akkuverwaltung des Systems.",
+   "en": "Monitors battery and power use; part of the system's battery management."
+  },
+  {
+   "id": "com.oplus.sauhelper",
+   "list": "never",
+   "name": "System-App-Updates (SAU)",
+   "de": "Aktualisiert Systemkomponenten des Herstellers. Ohne sie bekommt das System keine Komponenten-Updates.",
+   "en": "Updates the vendor's system components. Without it the system gets no component updates."
+  }
+ ]
+}
