@@ -19,6 +19,11 @@ USB-Kabel und `adb` — plus eine optionale Firewall-Blockliste gegen Tracker un
 
 English version: [README.md](README.md)
 
+> **Neu, noch ungetestet: Android-App.** Dieselben Funktionen direkt auf dem Telefon, über Shizuku, mit
+> Erklärungen zu jeder App und eigener Liste. Stand und Bauanleitung: [android/README.md](android/README.md).
+>
+> <img src="docs/app/02_home_ready.png" width="180"> <img src="docs/app/04_apps_safe.png" width="180"> <img src="docs/app/07_detail_browser.png" width="180"> <img src="docs/app/09_telemetry.png" width="180">
+
 ---
 
 ## Was es macht

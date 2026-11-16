@@ -17,6 +17,10 @@ and `adb` — plus an optional firewall blocklist against trackers and a clear u
 
 German version: [README.de.md](README.de.md)
 
+> **New, not yet tested on a device: Android app.** The same features directly on the phone, through Shizuku,
+> with an explanation for every app and your own list. Status and build instructions (German):
+> [android/README.md](android/README.md).
+
 ---
 
 ## What it does
