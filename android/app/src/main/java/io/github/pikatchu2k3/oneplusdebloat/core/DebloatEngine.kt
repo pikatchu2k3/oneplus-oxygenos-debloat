@@ -25,8 +25,11 @@ enum class Outcome {
     RESTORE_FAILED,
     NOT_PRESENT,
 
-    /** On the never-touch or system-base list: freezing and removing are refused. */
+    /** System base or locked system component: freezing and removing are refused. */
     PROTECTED,
+
+    /** Currently the phone's default dialer, SMS app, keyboard or launcher: refused until replaced. */
+    DEFAULT_APP,
     INVALID_NAME,
 }
 
@@ -78,6 +81,8 @@ class DebloatEngine(
     private val journal: Journal,
     private val protectedPackages: Set<String>,
     private val userId: Int = 0,
+    /** True while the package is the phone's default for a job it cannot do without. */
+    private val isDefaultApp: (String) -> Boolean = { false },
 ) {
     suspend fun freeze(pkg: String): ActionResult {
         precheck(pkg, changing = true)?.let { return it }
@@ -238,6 +243,7 @@ class DebloatEngine(
     private fun precheck(pkg: String, changing: Boolean): ActionResult? = when {
         !isValidPackageName(pkg) -> ActionResult(pkg, Outcome.INVALID_NAME)
         changing && pkg in protectedPackages -> ActionResult(pkg, Outcome.PROTECTED)
+        changing && isDefaultApp(pkg) -> ActionResult(pkg, Outcome.DEFAULT_APP)
         else -> null
     }
 

@@ -1,6 +1,10 @@
 package io.github.pikatchu2k3.oneplusdebloat.data
 
 import android.content.Context
+import android.content.Intent
+import android.provider.Settings
+import android.provider.Telephony
+import android.telecom.TelecomManager
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import io.github.pikatchu2k3.oneplusdebloat.core.Journal
@@ -10,8 +14,11 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
 
+enum class DefaultRole { KEYBOARD, DIALER, SMS, LAUNCHER }
+
 /** Reads package states through the normal PackageManager; needs no special rights. */
 class AndroidPackageSource(context: Context) : PackageSource {
+    private val context: Context = context.applicationContext
     private val pm: PackageManager = context.applicationContext.packageManager
 
     override fun stateOf(pkg: String): PkgState {
@@ -28,6 +35,27 @@ class AndroidPackageSource(context: Context) : PackageSource {
     }
 
     fun labelOf(info: ApplicationInfo): String = info.loadLabel(pm).toString()
+
+    /**
+     * The job this package currently does as the phone's default app, if any.
+     * Freezing the default keyboard, dialer, SMS app or launcher can lock the user out.
+     */
+    fun defaultRoleOf(pkg: String): DefaultRole? = try {
+        when (pkg) {
+            Settings.Secure.getString(context.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
+                ?.substringBefore('/') -> DefaultRole.KEYBOARD
+            (context.getSystemService(Context.TELECOM_SERVICE) as? TelecomManager)?.defaultDialerPackage ->
+                DefaultRole.DIALER
+            Telephony.Sms.getDefaultSmsPackage(context) -> DefaultRole.SMS
+            pm.resolveActivity(
+                Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),
+                PackageManager.MATCH_DEFAULT_ONLY,
+            )?.activityInfo?.packageName -> DefaultRole.LAUNCHER
+            else -> null
+        }
+    } catch (_: Exception) {
+        null
+    }
 
     fun allApps(): List<ApplicationInfo> =
         pm.getInstalledApplications(PackageManager.MATCH_UNINSTALLED_PACKAGES)

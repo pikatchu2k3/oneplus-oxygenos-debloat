@@ -50,6 +50,8 @@ fun CleanupApp(vm: MainViewModel) {
     var listTab by rememberSaveable { mutableIntStateOf(0) }
     var detail by rememberSaveable { mutableStateOf<String?>(null) }
     var confirmRemove by remember { mutableStateOf<List<String>?>(null) }
+    // A replaceable core app (dialer, keyboard ...) and whether it is to be removed instead of frozen.
+    var caution by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
     val snackbar = remember { SnackbarHostState() }
 
     // Coming back from Shizuku or the system settings: states may have changed.
@@ -96,7 +98,7 @@ fun CleanupApp(vm: MainViewModel) {
                 )
                 Tab.APPS -> AppsScreen(
                     ui = ui, vm = vm, listTab = listTab,
-                    onListTab = { listTab = it; vm.clearSelection() },
+                    onListTab = { listTab = it },
                     onDetail = { detail = it },
                 )
                 Tab.TELEMETRY -> TelemetryScreen(ui = ui, vm = vm, onOpenHelp = { tab = Tab.HELP })
@@ -133,7 +135,30 @@ fun CleanupApp(vm: MainViewModel) {
         else DetailSheet(
             row = row, ui = ui, vm = vm,
             onDismiss = { detail = null },
-            onRemove = { confirmRemove = listOf(pkg) },
+            onFreeze = { if (row.isCaution) caution = pkg to false else vm.freeze(listOf(pkg)) },
+            onRemove = { if (row.isCaution) caution = pkg to true else confirmRemove = listOf(pkg) },
+        )
+    }
+
+    caution?.let { (pkg, removing) ->
+        AlertDialog(
+            onDismissRequest = { caution = null },
+            title = { Text(t.cautionTitle) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(ui.rows[pkg]?.label ?: pkg, fontWeight = FontWeight.SemiBold)
+                    PackageName(pkg)
+                    ui.rows[pkg]?.entry?.description(t.german)?.takeIf { it.isNotEmpty() }?.let { Text(it) }
+                    Text(t.cautionBody)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    caution = null
+                    if (removing) confirmRemove = listOf(pkg) else vm.freeze(listOf(pkg))
+                }) { Text(t.cautionConfirm) }
+            },
+            dismissButton = { TextButton(onClick = { caution = null }) { Text(t.cancel) } },
         )
     }
 }
@@ -182,6 +207,9 @@ private fun ReportDialog(report: Report, ui: UiState, onDismiss: () -> Unit, onR
                     for (r in report.failed) {
                         FailureLine(ui.rows[r.pkg]?.label ?: r.pkg, r.pkg, r.phoneSays.ifEmpty { t.outcome(r.outcome) })
                     }
+                }
+                if (report.count(Outcome.DEFAULT_APP) > 0) {
+                    Text(t.reportDefaultApp(report.count(Outcome.DEFAULT_APP)), style = MaterialTheme.typography.bodyMedium)
                 }
                 if (report.count(Outcome.PROTECTED) > 0) {
                     Text(t.reportProtected(report.count(Outcome.PROTECTED)), style = MaterialTheme.typography.bodyMedium)

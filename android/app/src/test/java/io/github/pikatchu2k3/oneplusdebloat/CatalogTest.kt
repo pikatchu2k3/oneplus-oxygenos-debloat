@@ -36,9 +36,13 @@ class CatalogTest {
     }
 
     @Test
-    fun protectedCoversNeverListAndSystemBase() {
-        assertTrue("com.google.android.dialer" in catalog.protectedPackages)
+    fun onlyTheSystemBaseIsLocked() {
         assertTrue("com.android.systemui" in catalog.protectedPackages)
+        assertTrue("com.oplus.sauhelper" in catalog.protectedPackages)
+        assertTrue("com.google.android.overlay.modules.healthfitness.forframework" in catalog.protectedPackages)
+        // Replaceable core apps are guarded by the default-app check instead of a hard lock.
+        assertTrue("com.google.android.dialer" !in catalog.protectedPackages)
+        assertTrue("com.google.android.inputmethod.latin" !in catalog.protectedPackages)
         assertTrue("com.heytap.browser" !in catalog.protectedPackages)
     }
 

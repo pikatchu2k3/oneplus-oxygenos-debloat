@@ -8,6 +8,14 @@
   command to copy. Custom list with import/export, German and English, description for all 103 packages.
   The package lists are generated from `oneplus_cleanup.bat` (`tools/gen_app_catalog.py`). Built-in wireless
   ADB is planned as stage 2. **Not tested on a device** – unit tests against a fake phone and JVM screenshots only.
+- **Android app 0.2.0-alpha** (after first feedback from a device; Shizuku access works there):
+  - "Protected" tab renamed to "Caution" and split: phone, SMS, contacts, calendar, Gmail and Gboard can now be
+    frozen one at a time after a prompt. Freezing is refused while a package is the phone's default keyboard,
+    dialer, SMS app or launcher. Only the system base and three system components stay locked.
+  - Selection is kept across tabs, and "Everything at once" on the home screen freezes whole lists.
+  - Home counters now show the real state of the phone (anything disabled or removed, whoever did it); new
+    "Off" tab lists these packages for releasing or bringing back.
+  - Help: how to start Shizuku from a PC over ADB, and why no one-time ADB permission grant exists.
 
 ## v0.9.7-beta — pre-release
 

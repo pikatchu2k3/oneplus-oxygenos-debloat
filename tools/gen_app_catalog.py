@@ -292,23 +292,23 @@ INFO = {
  "Relays the system's location requests. If positioning misbehaves afterwards, release it."),
 # ---- never
 "com.google.android.apps.messaging": ("Google Messages",
- "SMS und RCS. Ohne sie kommen keine SMS mehr an (auch keine TANs und Codes).",
- "SMS and RCS. Without it no text messages arrive (including one-time codes)."),
+ "SMS und RCS. Nur einfrieren, wenn eine andere SMS-App installiert und als Standard gesetzt ist – sonst kommen keine SMS mehr an (auch keine TANs und Codes).",
+ "SMS and RCS. Only freeze it if another SMS app is installed and set as default – otherwise no text messages arrive (including one-time codes)."),
 "com.google.android.calendar": ("Google Kalender",
- "Der Kalender samt Erinnerungen und Synchronisierung.",
- "The calendar with reminders and sync."),
+ "Der Kalender samt Erinnerungen und Synchronisierung. Ohne ihn brauchst du eine andere Kalender-App, sonst entfallen Termin-Erinnerungen.",
+ "The calendar with reminders and sync. Without it you need another calendar app, otherwise event reminders stop."),
 "com.google.android.contacts": ("Kontakte",
- "Das Adressbuch. Telefon-App und Messenger greifen darauf zu.",
- "The address book. The phone app and messengers rely on it."),
+ "Das Adressbuch von Google. Nur einfrieren, wenn eine andere Kontakte-App vorhanden ist. Die Kontakte selbst bleiben gespeichert.",
+ "Google's address book. Only freeze it if another contacts app is present. The contacts themselves stay stored."),
 "com.google.android.dialer": ("Telefon",
- "Die Telefon-App. Ohne sie sind keine Anrufe möglich – auch kein Notruf.",
- "The phone app. Without it no calls are possible – not even emergency calls."),
+ "Die Telefon-App von Google. Nur einfrieren, wenn eine andere Telefon-App installiert und als Standard gesetzt ist – sonst sind keine Anrufe möglich, auch kein Notruf.",
+ "Google's phone app. Only freeze it if another phone app is installed and set as default – otherwise no calls are possible, not even emergency calls."),
 "com.google.android.gm": ("Gmail",
- "Die Mail-App; liefert auch Konto-Benachrichtigungen von Google.",
- "The mail app; also delivers Google account notifications."),
+ "Googles Mail-App. Ohne sie brauchst du eine andere Mail-App; Sicherheitshinweise zum Google-Konto kommen dann nur noch per Mail dort an.",
+ "Google's mail app. Without it you need another mail app; Google account security alerts then only arrive there by mail."),
 "com.google.android.inputmethod.latin": ("Gboard (Tastatur)",
- "Die Bildschirmtastatur. Ohne Tastatur lässt sich nicht einmal mehr die PIN eingeben.",
- "The on-screen keyboard. Without a keyboard you cannot even enter your PIN."),
+ "Googles Bildschirmtastatur. Nur einfrieren, wenn eine andere Tastatur installiert, aktiviert und ausgewählt ist – ohne Tastatur lässt sich nicht einmal mehr die PIN eingeben.",
+ "Google's on-screen keyboard. Only freeze it if another keyboard is installed, enabled and selected – without a keyboard you cannot even enter your PIN."),
 "com.google.android.overlay.modules.healthfitness.forframework": ("Health-Connect-Systemoverlay",
  "Systembaustein, den Android beim Start erwartet. Einfrieren kann zu Startproblemen führen.",
  "System component Android expects at boot. Freezing it can cause boot problems."),
@@ -318,6 +318,19 @@ INFO = {
 "com.oplus.sauhelper": ("System-App-Updates (SAU)",
  "Aktualisiert Systemkomponenten des Herstellers. Ohne sie bekommt das System keine Komponenten-Updates.",
  "Updates the vendor's system components. Without it the system gets no component updates."),
+}
+
+# Entries of the script's never-touch list that a user may replace with another app (their own
+# dialer, keyboard, mail app ...). The app lets these be frozen after a warning, and refuses only
+# while the package is the phone's current default for that job. Everything else on the
+# never-touch list, and the system base, stays locked.
+REPLACEABLE = {
+    "com.google.android.apps.messaging",
+    "com.google.android.calendar",
+    "com.google.android.contacts",
+    "com.google.android.dialer",
+    "com.google.android.gm",
+    "com.google.android.inputmethod.latin",
 }
 
 def lists_from_bat(path):
@@ -338,7 +351,10 @@ def main():
             if pkg not in INFO:
                 sys.exit("no description for " + pkg)
             name, de, en = INFO[pkg]
-            packages.append({"id": pkg, "list": kind, "name": name, "de": de, "en": en})
+            entry = {"id": pkg, "list": kind, "name": name, "de": de, "en": en}
+            if kind == "never" and pkg not in REPLACEABLE:
+                entry["locked"] = True
+            packages.append(entry)
     listed = {p["id"] for p in packages}
     extra = set(INFO) - listed
     if extra:

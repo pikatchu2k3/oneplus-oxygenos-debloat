@@ -37,12 +37,21 @@ import io.github.pikatchu2k3.oneplusdebloat.core.PkgState
 /** Everything about one package: what it is, where it stands, and what can be done with it. */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun DetailSheet(row: AppRow, ui: UiState, vm: MainViewModel, onDismiss: () -> Unit, onRemove: () -> Unit) {
+fun DetailSheet(
+    row: AppRow,
+    ui: UiState,
+    vm: MainViewModel,
+    onDismiss: () -> Unit,
+    onFreeze: () -> Unit,
+    onRemove: () -> Unit,
+) {
     val t = LocalTxt.current
     val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val user = vm.userIdForCommands
     val inCustom = row.pkg in ui.custom
+    // Locked system parts never; anything that is the phone's current default app not until replaced.
+    val canSwitchOff = !row.isProtected && row.defaultRole == null
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
@@ -65,12 +74,14 @@ fun DetailSheet(row: AppRow, ui: UiState, vm: MainViewModel, onDismiss: () -> Un
                 StateChip(row.state)
                 val scheme = MaterialTheme.colorScheme
                 when {
-                    row.isProtected -> Pill(t.listNever, scheme.errorContainer, scheme.onErrorContainer)
+                    row.isProtected -> Pill(t.locked, scheme.errorContainer, scheme.onErrorContainer)
+                    row.isCaution -> Pill(t.listCaution, scheme.errorContainer, scheme.onErrorContainer)
                     row.entry?.kind == ListKind.SAFE -> Pill(t.listSafe, scheme.secondaryContainer, scheme.onSecondaryContainer)
                     row.entry?.kind == ListKind.OPTIONAL -> Pill(t.listOptional, scheme.secondaryContainer, scheme.onSecondaryContainer)
                 }
                 if (inCustom) Pill(t.listCustom, scheme.secondaryContainer, scheme.onSecondaryContainer)
                 if (row.isSystem) Pill(t.systemApp, scheme.surfaceVariant, scheme.onSurfaceVariant)
+                row.defaultRole?.let { Pill(t.defaultRole(it), scheme.errorContainer, scheme.onErrorContainer) }
             }
 
             val description = row.entry?.description(t.german).orEmpty()
@@ -85,18 +96,26 @@ fun DetailSheet(row: AppRow, ui: UiState, vm: MainViewModel, onDismiss: () -> Un
             Text(t.stateExplanation(row.state), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             // ---- actions
-            if (row.isProtected && row.state == PkgState.ACTIVE) {
-                Text(t.protectedHint, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+            if (row.state == PkgState.ACTIVE || row.state == PkgState.FROZEN) {
+                val hint = when {
+                    row.isProtected -> t.protectedHint
+                    row.defaultRole != null -> t.defaultHint(row.defaultRole)
+                    row.isCaution && row.state == PkgState.ACTIVE -> t.cautionHint
+                    else -> null
+                }
+                if (hint != null) {
+                    Text(hint, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                }
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 when (row.state) {
-                    PkgState.ACTIVE -> if (!row.isProtected) {
-                        Button(onClick = { vm.freeze(listOf(row.pkg)); onDismiss() }, enabled = ui.ready) { Text(t.freeze) }
+                    PkgState.ACTIVE -> if (canSwitchOff) {
+                        Button(onClick = { onDismiss(); onFreeze() }, enabled = ui.ready) { Text(t.freeze) }
                         OutlinedButton(onClick = { onDismiss(); onRemove() }, enabled = ui.ready) { Text(t.remove) }
                     }
                     PkgState.FROZEN -> {
                         Button(onClick = { vm.thaw(row.pkg); onDismiss() }, enabled = ui.ready) { Text(t.thaw) }
-                        if (!row.isProtected) {
+                        if (canSwitchOff) {
                             OutlinedButton(onClick = { onDismiss(); onRemove() }, enabled = ui.ready) { Text(t.remove) }
                         }
                     }
@@ -108,14 +127,14 @@ fun DetailSheet(row: AppRow, ui: UiState, vm: MainViewModel, onDismiss: () -> Un
                 }
                 if (inCustom) TextButton(onClick = { vm.removeCustom(row.pkg); onDismiss() }) { Text(t.removeFromList) }
             }
-            if (row.state == PkgState.ACTIVE && !row.isProtected) {
+            if (row.state == PkgState.ACTIVE && canSwitchOff) {
                 Text(t.freezeVsRemove, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
             // ---- without Shizuku: how to do the same by hand
             if (!ui.ready && row.state != PkgState.NOT_PRESENT) {
                 val command = when (row.state) {
-                    PkgState.ACTIVE -> if (row.isProtected) null else "adb shell pm disable-user --user $user ${row.pkg}"
+                    PkgState.ACTIVE -> if (!canSwitchOff) null else "adb shell pm disable-user --user $user ${row.pkg}"
                     PkgState.FROZEN -> "adb shell pm enable --user $user ${row.pkg}"
                     PkgState.REMOVED -> "adb shell pm install-existing --user $user ${row.pkg}"
                     PkgState.NOT_PRESENT -> null

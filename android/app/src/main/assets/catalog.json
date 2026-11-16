@@ -685,64 +685,67 @@
    "id": "com.google.android.apps.messaging",
    "list": "never",
    "name": "Google Messages",
-   "de": "SMS und RCS. Ohne sie kommen keine SMS mehr an (auch keine TANs und Codes).",
-   "en": "SMS and RCS. Without it no text messages arrive (including one-time codes)."
+   "de": "SMS und RCS. Nur einfrieren, wenn eine andere SMS-App installiert und als Standard gesetzt ist – sonst kommen keine SMS mehr an (auch keine TANs und Codes).",
+   "en": "SMS and RCS. Only freeze it if another SMS app is installed and set as default – otherwise no text messages arrive (including one-time codes)."
   },
   {
    "id": "com.google.android.calendar",
    "list": "never",
    "name": "Google Kalender",
-   "de": "Der Kalender samt Erinnerungen und Synchronisierung.",
-   "en": "The calendar with reminders and sync."
+   "de": "Der Kalender samt Erinnerungen und Synchronisierung. Ohne ihn brauchst du eine andere Kalender-App, sonst entfallen Termin-Erinnerungen.",
+   "en": "The calendar with reminders and sync. Without it you need another calendar app, otherwise event reminders stop."
   },
   {
    "id": "com.google.android.contacts",
    "list": "never",
    "name": "Kontakte",
-   "de": "Das Adressbuch. Telefon-App und Messenger greifen darauf zu.",
-   "en": "The address book. The phone app and messengers rely on it."
+   "de": "Das Adressbuch von Google. Nur einfrieren, wenn eine andere Kontakte-App vorhanden ist. Die Kontakte selbst bleiben gespeichert.",
+   "en": "Google's address book. Only freeze it if another contacts app is present. The contacts themselves stay stored."
   },
   {
    "id": "com.google.android.dialer",
    "list": "never",
    "name": "Telefon",
-   "de": "Die Telefon-App. Ohne sie sind keine Anrufe möglich – auch kein Notruf.",
-   "en": "The phone app. Without it no calls are possible – not even emergency calls."
+   "de": "Die Telefon-App von Google. Nur einfrieren, wenn eine andere Telefon-App installiert und als Standard gesetzt ist – sonst sind keine Anrufe möglich, auch kein Notruf.",
+   "en": "Google's phone app. Only freeze it if another phone app is installed and set as default – otherwise no calls are possible, not even emergency calls."
   },
   {
    "id": "com.google.android.gm",
    "list": "never",
    "name": "Gmail",
-   "de": "Die Mail-App; liefert auch Konto-Benachrichtigungen von Google.",
-   "en": "The mail app; also delivers Google account notifications."
+   "de": "Googles Mail-App. Ohne sie brauchst du eine andere Mail-App; Sicherheitshinweise zum Google-Konto kommen dann nur noch per Mail dort an.",
+   "en": "Google's mail app. Without it you need another mail app; Google account security alerts then only arrive there by mail."
   },
   {
    "id": "com.google.android.inputmethod.latin",
    "list": "never",
    "name": "Gboard (Tastatur)",
-   "de": "Die Bildschirmtastatur. Ohne Tastatur lässt sich nicht einmal mehr die PIN eingeben.",
-   "en": "The on-screen keyboard. Without a keyboard you cannot even enter your PIN."
+   "de": "Googles Bildschirmtastatur. Nur einfrieren, wenn eine andere Tastatur installiert, aktiviert und ausgewählt ist – ohne Tastatur lässt sich nicht einmal mehr die PIN eingeben.",
+   "en": "Google's on-screen keyboard. Only freeze it if another keyboard is installed, enabled and selected – without a keyboard you cannot even enter your PIN."
   },
   {
    "id": "com.google.android.overlay.modules.healthfitness.forframework",
    "list": "never",
    "name": "Health-Connect-Systemoverlay",
    "de": "Systembaustein, den Android beim Start erwartet. Einfrieren kann zu Startproblemen führen.",
-   "en": "System component Android expects at boot. Freezing it can cause boot problems."
+   "en": "System component Android expects at boot. Freezing it can cause boot problems.",
+   "locked": true
   },
   {
    "id": "com.oplus.powermonitor",
    "list": "never",
    "name": "Energieüberwachung",
    "de": "Überwacht Akku und Stromverbrauch; Teil der Akkuverwaltung des Systems.",
-   "en": "Monitors battery and power use; part of the system's battery management."
+   "en": "Monitors battery and power use; part of the system's battery management.",
+   "locked": true
   },
   {
    "id": "com.oplus.sauhelper",
    "list": "never",
    "name": "System-App-Updates (SAU)",
    "de": "Aktualisiert Systemkomponenten des Herstellers. Ohne sie bekommt das System keine Komponenten-Updates.",
-   "en": "Updates the vendor's system components. Without it the system gets no component updates."
+   "en": "Updates the vendor's system components. Without it the system gets no component updates.",
+   "locked": true
   }
  ]
 }

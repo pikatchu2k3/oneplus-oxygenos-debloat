@@ -79,6 +79,8 @@ class ScreenshotTest {
         install("com.oplus.encryption", "Privater Safe")
         install("com.google.android.dialer", "Telefon")
         install("com.google.android.inputmethod.latin", "Gboard")
+        install("com.google.android.gm", "Gmail", enabled = false)
+        install("com.example.oldgame", "Altes Spiel", enabled = false)
         vm = MainViewModel(app)
         // The view model loads on a background thread and publishes on the main looper,
         // which Robolectric only runs when asked to.
@@ -135,8 +137,20 @@ class ScreenshotTest {
     }
 
     @Test
-    fun apps_protected_english() = shot("05_apps_protected_en", german = false) {
+    fun apps_caution() = shot("05_apps_caution") {
         AppsScreen(ready(), vm, 3, {}, {})
+    }
+
+    @Test
+    fun apps_off_english() = shot("11_apps_off_en", german = false) {
+        AppsScreen(ready(), vm, 4, {}, {})
+    }
+
+    @Test
+    fun detail_caution_dialer() = shot("12_detail_caution") {
+        val ui = ready()
+        AppsScreen(ui, vm, 3, {}, {})
+        DetailSheet(ui.rows.getValue("com.google.android.dialer"), ui, vm, {}, {}, {})
     }
 
     @Test
@@ -148,14 +162,14 @@ class ScreenshotTest {
     fun detail_sheet() = shot("07_detail_browser") {
         val ui = ready()
         AppsScreen(ui, vm, 0, {}, {})
-        DetailSheet(ui.rows.getValue("com.heytap.browser"), ui, vm, {}, {})
+        DetailSheet(ui.rows.getValue("com.heytap.browser"), ui, vm, {}, {}, {})
     }
 
     @Test
     fun detail_sheet_view_only() = shot("08_detail_view_only") {
         val ui = vm.ui.value
         AppsScreen(ui, vm, 1, {}, {})
-        DetailSheet(ui.rows.getValue("com.oplus.encryption"), ui, vm, {}, {})
+        DetailSheet(ui.rows.getValue("com.oplus.encryption"), ui, vm, {}, {}, {})
     }
 
     @Test

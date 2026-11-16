@@ -24,6 +24,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -57,6 +58,7 @@ fun HomeScreen(
     val t = LocalTxt.current
     var confirmReset by remember { mutableStateOf(false) }
     var showLog by remember { mutableStateOf(false) }
+    var bulk by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -68,14 +70,18 @@ fun HomeScreen(
         ConnectionCard(ui.shizuku, vm, onOpenHelp)
 
         // What this app has done so far, and what is still running from the safe list.
-        val frozen = ui.journalFrozen.count { ui.rows[it]?.state == PkgState.FROZEN }
-        val removed = ui.journalRemoved.count { ui.rows[it]?.state == PkgState.REMOVED }
+        // The real state of the phone, not only what this app did: the PC script, Canta or the
+        // user may have switched things off before.
+        val frozen = ui.deviceFrozen.size
+        val removed = ui.deviceRemoved.size
         val safeActive = vm.safeIds.count { ui.rows[it]?.state == PkgState.ACTIVE }
         Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatCard(frozen.toString(), t.statFrozen, Modifier.weight(1f).fillMaxHeight())
-            StatCard(removed.toString(), t.statRemoved, Modifier.weight(1f).fillMaxHeight())
+            StatCard(frozen.toString(), t.statFrozen, Modifier.weight(1f).fillMaxHeight()) { onOpenList(4) }
+            StatCard(removed.toString(), t.statRemoved, Modifier.weight(1f).fillMaxHeight()) { onOpenList(4) }
             StatCard(safeActive.toString(), t.statSafeActive, Modifier.weight(1f).fillMaxHeight()) { onOpenList(0) }
         }
+
+        Text(t.statNote, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         if (ui.drift.isNotEmpty()) {
             InfoCard(
@@ -110,6 +116,7 @@ fun HomeScreen(
                 Button(onClick = { onOpenList(0) }) { Text(t.listSafe) }
                 FilledTonalButton(onClick = { onOpenList(2) }) { Text(t.listCustom) }
             }
+            OutlinedButton(onClick = { bulk = true }) { Text(t.bulkButton) }
         }
 
         InfoCard(icon = Icons.Filled.Refresh, title = t.resetTitle) {
@@ -139,6 +146,10 @@ fun HomeScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(8.dp))
+    }
+
+    if (bulk) {
+        BulkDialog(ui, vm, onDismiss = { bulk = false })
     }
 
     if (confirmReset) {
@@ -201,5 +212,48 @@ private fun StatCard(value: String, label: String, modifier: Modifier = Modifier
                 textAlign = TextAlign.Center,
             )
         }
+    }
+}
+
+/** "Everything at once": freeze all active apps of the chosen lists in one go. */
+@Composable
+private fun BulkDialog(ui: UiState, vm: MainViewModel, onDismiss: () -> Unit) {
+    val t = LocalTxt.current
+    var safe by remember { mutableStateOf(true) }
+    var optional by remember { mutableStateOf(false) }
+    var custom by remember { mutableStateOf(ui.custom.isNotEmpty()) }
+    val candidates = vm.bulkCandidates(safe, optional, custom)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(t.bulkTitle) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(t.bulkBody)
+                BulkRow(t.bulkList(t.listSafe, vm.bulkCandidates(true, false, false).size), safe) { safe = it }
+                BulkRow(t.bulkList(t.listOptional, vm.bulkCandidates(false, true, false).size), optional) { optional = it }
+                BulkRow(t.bulkList(t.listCustom, vm.bulkCandidates(false, false, true).size), custom) { custom = it }
+                if (optional) Text(t.bulkOptionalWarning, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                Text(t.bulkNote, style = MaterialTheme.typography.bodySmall)
+                if (!ui.ready) Text(t.needsShellShort, style = MaterialTheme.typography.bodySmall)
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onDismiss(); vm.freeze(candidates) },
+                enabled = ui.ready && candidates.isNotEmpty(),
+            ) { Text(t.bulkConfirm(candidates.size)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(t.cancel) } },
+    )
+}
+
+@Composable
+private fun BulkRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable { onChange(!checked) },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Checkbox(checked = checked, onCheckedChange = onChange)
+        Text(label)
     }
 }

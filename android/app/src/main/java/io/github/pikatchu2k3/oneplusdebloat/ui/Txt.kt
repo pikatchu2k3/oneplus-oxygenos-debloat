@@ -3,6 +3,7 @@ package io.github.pikatchu2k3.oneplusdebloat.ui
 import io.github.pikatchu2k3.oneplusdebloat.core.OpOutcome
 import io.github.pikatchu2k3.oneplusdebloat.core.Outcome
 import io.github.pikatchu2k3.oneplusdebloat.core.PkgState
+import io.github.pikatchu2k3.oneplusdebloat.data.DefaultRole
 import io.github.pikatchu2k3.oneplusdebloat.shizuku.ShizukuState
 
 /**
@@ -40,7 +41,9 @@ interface Txt {
     val listSafe: String
     val listOptional: String
     val listCustom: String
-    val listNever: String
+    val listCaution: String
+    val listOff: String
+    val locked: String
     fun listIntro(tab: Int): String
     fun listSummary(present: Int, all: Int): String
     fun showMissing(n: Int): String
@@ -67,6 +70,13 @@ interface Txt {
     val removeFromList: String
     val freezeVsRemove: String
     val protectedHint: String
+    val cautionHint: String
+    val cautionTitle: String
+    val cautionBody: String
+    val cautionConfirm: String
+    fun defaultRole(role: DefaultRole): String
+    fun defaultHint(role: DefaultRole): String
+    fun reportDefaultApp(n: Int): String
     val criticalDescription: String
     val noDescription: String
     val manualTitle: String
@@ -101,6 +111,14 @@ interface Txt {
     val statFrozen: String
     val statRemoved: String
     val statSafeActive: String
+    val statNote: String
+    val bulkButton: String
+    val bulkTitle: String
+    val bulkBody: String
+    fun bulkList(name: String, n: Int): String
+    val bulkOptionalWarning: String
+    val bulkNote: String
+    fun bulkConfirm(n: Int): String
     fun driftTitle(n: Int): String
     val driftBody: String
     val driftApply: String
@@ -195,12 +213,15 @@ object De : Txt {
     override val listSafe = "Sicher"
     override val listOptional = "Optional"
     override val listCustom = "Eigene"
-    override val listNever = "Geschützt"
+    override val listCaution = "Vorsicht"
+    override val listOff = "Aus"
+    override val locked = "gesperrt"
     override fun listIntro(tab: Int) = when (tab) {
         0 -> "Telemetrie, Werbung, Protokolle und Testwerkzeuge. Diese Apps kannst du einfrieren, ohne dass im Alltag etwas fehlt. Tippe auf einen Eintrag für Details."
         1 -> "Geschmackssache: Hier hängen Funktionen dran, die du vielleicht nutzt (Chrome, Fotos, Android Auto, Privater Safe …). Lies vor dem Einfrieren die Beschreibung."
         2 -> "Deine eigene Liste. Füge beliebige installierte Apps hinzu und friere sie genauso ein. Die Liste lässt sich als Datei sichern und auf ein anderes Telefon übertragen."
-        else -> "Diese Apps braucht das Telefon. Die App friert sie nicht ein und entfernt sie nicht – ohne sie gehen z. B. Anrufe, SMS oder die Tastatur nicht mehr."
+        3 -> "Kern-Apps wie Telefon, SMS, Kontakte und Tastatur. Du kannst sie einfrieren, wenn du Ersatz hast – einzeln und nach einer Rückfrage. Solange eine davon die Standard-App des Telefons ist, verweigert die App das. Mit Schloss markiert ist die System-Basis: Sie bleibt gesperrt, weil das Telefon ohne sie nicht mehr startet oder bedienbar ist."
+        else -> "Alles, was auf diesem Telefon gerade deaktiviert oder für dich entfernt ist – egal ob durch diese App, das PC-Skript, Canta, dich selbst oder ab Werk. Tippe auf einen Eintrag, um ihn freizugeben oder zurückzuholen."
     }
     override fun listSummary(present: Int, all: Int) = "$present von $all auf diesem Telefon vorhanden"
     override fun showMissing(n: Int) = "Nicht vorhandene zeigen ($n)"
@@ -225,9 +246,26 @@ object De : Txt {
     override val systemSettings = "App-Info öffnen"
     override val removeFromList = "Aus meiner Liste nehmen"
     override val freezeVsRemove = "Einfrieren ist der sanfte Weg. Manche Telefone ignorieren das bei einzelnen System-Apps – dann hilft „Entfernen“ (für dich deinstallieren, jederzeit zurückholbar)."
-    override val protectedHint = "Geschützt: Diese App wird nicht eingefroren oder entfernt, weil das Telefon sie braucht."
+    override val protectedHint = "Gesperrt: Teil der System-Basis. Die App friert sie nicht ein und entfernt sie nicht, weil das Telefon ohne sie nicht mehr startet oder bedienbar ist."
+    override val cautionHint = "Vorsicht: Kern-App. Nur einfrieren, wenn eine andere App diese Aufgabe übernimmt."
+    override val cautionTitle = "Kern-App wirklich abschalten?"
+    override val cautionBody = "Stelle vorher sicher, dass eine andere App diese Aufgabe übernimmt und in den Einstellungen als Standard gesetzt ist. Rückgängig geht es jederzeit im Tab „Aus“."
+    override val cautionConfirm = "Ich habe Ersatz"
+    override fun defaultRole(role: DefaultRole) = when (role) {
+        DefaultRole.KEYBOARD -> "aktive Tastatur"
+        DefaultRole.DIALER -> "Standard-Telefon-App"
+        DefaultRole.SMS -> "Standard-SMS-App"
+        DefaultRole.LAUNCHER -> "Standard-Startbildschirm"
+    }
+    override fun defaultHint(role: DefaultRole) = when (role) {
+        DefaultRole.KEYBOARD -> "Das ist gerade deine aktive Tastatur. Wähle zuerst eine andere Tastatur aus (Einstellungen → System → Tastatur), sonst kannst du nichts mehr eingeben – auch keine PIN."
+        DefaultRole.DIALER -> "Das ist gerade deine Standard-Telefon-App. Lege zuerst eine andere fest (Einstellungen → Apps → Standard-Apps), sonst sind keine Anrufe mehr möglich."
+        DefaultRole.SMS -> "Das ist gerade deine Standard-SMS-App. Lege zuerst eine andere fest (Einstellungen → Apps → Standard-Apps), sonst kommen keine SMS mehr an."
+        DefaultRole.LAUNCHER -> "Das ist gerade dein Startbildschirm. Lege zuerst einen anderen fest (Einstellungen → Apps → Standard-Apps), sonst hat das Telefon keine Oberfläche mehr."
+    }
+    override fun reportDefaultApp(n: Int) = "$n übersprungen, weil sie gerade Standard-App des Telefons sind (Tastatur, Telefon, SMS oder Startbildschirm). Erst Ersatz als Standard festlegen."
     override val criticalDescription = "Teil der System-Basis (Oberfläche, Einstellungen, Telefonie oder Installer). Ohne sie ist das Telefon nicht mehr bedienbar."
-    override val noDescription = "Keine Beschreibung vorhanden – du hast diese App selbst hinzugefügt. Friere nur ein, was du kennst; im Zweifel hilft eine Suche nach dem Paketnamen."
+    override val noDescription = "Zu dieser App gibt es keine Beschreibung – sie steht in keiner der vorbereiteten Listen. Friere nur ein, was du kennst; im Zweifel hilft eine Suche nach dem Paketnamen."
     override val manualTitle = "Ohne Shizuku"
     override val manualBody = "Die App darf ohne Shizuku nichts ändern. Du kannst es selbst tun: über „App-Info öffnen“ → „Deaktivieren“ (falls das Telefon den Knopf anbietet) oder am PC mit diesem ADB-Befehl:"
     override val copyCommand = "Befehl kopieren"
@@ -257,7 +295,7 @@ object De : Txt {
     override fun reportIgnoredTitle(n: Int) = "$n lassen sich nicht einfrieren"
     override val reportIgnoredBody = "Das Telefon nimmt den Befehl an, lässt die App aber aktiv. Das ist eine Sperre des Herstellers. Ausweg: für dich entfernen – die Kopie im System und die App-Daten bleiben, „Zurückholen“ macht es rückgängig."
     override fun reportFailedTitle(n: Int) = "$n fehlgeschlagen"
-    override fun reportProtected(n: Int) = "$n geschützte Apps wurden übersprungen."
+    override fun reportProtected(n: Int) = "$n gesperrte System-Apps wurden übersprungen."
     override fun removeInstead(n: Int) = if (n == 1) "Stattdessen entfernen" else "Diese $n entfernen"
     override fun removeTitle(n: Int) = if (n == 1) "App entfernen?" else "$n Apps entfernen?"
     override val removeBody = "Die App wird nur für dich deinstalliert (wie bei Canta). Die Kopie im System und die App-Daten bleiben erhalten. Rückgängig: „Zurückholen“ in der App-Ansicht oder „Alles zurücksetzen“ auf der Startseite – ein Werksreset bringt sie ebenfalls zurück."
@@ -274,7 +312,8 @@ object De : Txt {
         Outcome.RESTORED -> "zurückgeholt"
         Outcome.RESTORE_FAILED -> "Zurückholen hat nicht geklappt"
         Outcome.NOT_PRESENT -> "nicht vorhanden"
-        Outcome.PROTECTED -> "geschützt"
+        Outcome.PROTECTED -> "gesperrt (System-Basis)"
+        Outcome.DEFAULT_APP -> "ist gerade Standard-App"
         Outcome.INVALID_NAME -> "ungültiger Paketname"
     }
 
@@ -301,6 +340,14 @@ object De : Txt {
     override val statFrozen = "eingefroren"
     override val statRemoved = "entfernt"
     override val statSafeActive = "sichere noch aktiv"
+    override val statNote = "Die Zähler zeigen den Stand des ganzen Telefons – auch was das PC-Skript, Canta oder du selbst vorher abgeschaltet hast. Tippen öffnet die Liste."
+    override val bulkButton = "Alle auf einmal …"
+    override val bulkTitle = "Alle auf einmal einfrieren"
+    override val bulkBody = "Wähle die Listen. Eingefroren wird alles daraus, was auf dem Telefon noch aktiv ist."
+    override fun bulkList(name: String, n: Int) = "$name ($n aktiv)"
+    override val bulkOptionalWarning = "Optional enthält u. a. Chrome, Google Fotos, Android Auto und den Privaten Safe (Inhalt danach nicht erreichbar). Besser einzeln auswählen."
+    override val bulkNote = "Kern-Apps aus „Vorsicht“ sind nie dabei – die schaltest du einzeln ab. Du kannst auch in den Listen Häkchen setzen; die Auswahl gilt über alle Tabs."
+    override fun bulkConfirm(n: Int) = if (n == 0) "Nichts zu tun" else "$n einfrieren"
     override fun driftTitle(n: Int) = if (n == 1) "1 App ist wieder aktiv" else "$n Apps sind wieder aktiv"
     override val driftBody = "Diese Apps hattest du eingefroren oder entfernt. Etwas – meist ein System-Update – hat sie zurückgebracht:"
     override val driftApply = "Erneut anwenden"
@@ -309,7 +356,7 @@ object De : Txt {
     override val startTitle = "Loslegen"
     override val startBody = "Beginne mit der sicheren Liste: wähle aus, was weg soll, und tippe auf „Einfrieren“. Eigene Wünsche kommen in deine eigene Liste."
     override val resetTitle = "Alles zurücksetzen"
-    override val resetBody = "Gibt alle Apps wieder frei, die diese App eingefroren hat, und holt entfernte zurück."
+    override val resetBody = "Gibt alle Apps wieder frei, die diese App eingefroren hat, und holt entfernte zurück. Was vorher schon aus war (PC-Skript, Canta), gibst du im Tab „Aus“ einzeln frei."
     override val resetButton = "Zurücksetzen"
     override fun resetConfirmBody(frozen: Int, removed: Int) =
         "$frozen eingefrorene Apps werden freigegeben, $removed entfernte zurückgeholt. Die Telemetrie-Sperre setzt du im Tab „Telemetrie“ zurück."
@@ -372,6 +419,17 @@ object De : Txt {
             ),
         ),
         HelpTopic(
+            "Shizuku per PC starten (statt WLAN-Kopplung)",
+            listOf(
+                "Android kennt keine Berechtigung, die sich einmalig per ADB vergeben ließe und das Deaktivieren anderer Apps dauerhaft erlaubt. Der Weg über ADB ist deshalb: Shizuku vom PC aus starten.",
+                "1. Shizuku installieren und einmal öffnen.",
+                "2. USB-Debugging einschalten, Telefon per Kabel an den PC, Abfrage am Telefon bestätigen.",
+                "3. Am PC ausführen: adb shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh",
+                "4. Zurück in diese App und „Zugriff erlauben“ tippen.",
+                "Auch das hält nur bis zum nächsten Neustart des Telefons – genau wie der Start über Wireless-Debugging. Das ist eine Vorgabe von Android, keine Einschränkung dieser App.",
+            ),
+        ),
+        HelpTopic(
             "Ohne Shizuku: Anzeige-Modus",
             listOf(
                 "Android erlaubt normalen Apps nicht, andere Apps zu deaktivieren – diese Berechtigung lässt sich auch nicht von Hand vergeben. Ohne Shizuku kann die App deshalb nur anzeigen und anleiten.",
@@ -406,7 +464,8 @@ object De : Txt {
         HelpTopic(
             "Was die App nie anfasst",
             listOf(
-                "Telefon, SMS, Kontakte, Tastatur, Oberfläche, Einstellungen und einige Systembausteine stehen auf der Liste „Geschützt“. Die App friert sie nicht ein und entfernt sie nicht – auch nicht über deine eigene Liste.",
+                "Gesperrt ist nur die System-Basis: Oberfläche, Einstellungen, Telefonie-Dienst, Installer und drei Systembausteine. Ohne sie startet das Telefon nicht mehr oder ist nicht bedienbar.",
+                "Kern-Apps wie Telefon, SMS, Kontakte, Kalender, Gmail und Gboard stehen im Tab „Vorsicht“. Du kannst sie abschalten, wenn du Ersatz hast. Die App verweigert es nur, solange eine davon die Standard-App ist – dasselbe gilt für jede andere Tastatur, Telefon-, SMS- oder Launcher-App.",
                 "Bei allem anderen entscheidest du. Lies die Beschreibung, besonders in der Liste „Optional“: Der Private Safe zum Beispiel ist eingefroren nicht mehr erreichbar.",
             ),
         ),
@@ -465,12 +524,15 @@ object En : Txt {
     override val listSafe = "Safe"
     override val listOptional = "Optional"
     override val listCustom = "My list"
-    override val listNever = "Protected"
+    override val listCaution = "Caution"
+    override val listOff = "Off"
+    override val locked = "locked"
     override fun listIntro(tab: Int) = when (tab) {
         0 -> "Telemetry, ads, logging and test tools. You can freeze these without missing anything day to day. Tap an entry for details."
         1 -> "A matter of taste: features you may use depend on these (Chrome, Photos, Android Auto, Private Safe …). Read the description before freezing."
         2 -> "Your own list. Add any installed app and freeze it the same way. The list can be saved to a file and moved to another phone."
-        else -> "The phone needs these. The app neither freezes nor removes them – without them calls, texts or the keyboard stop working."
+        3 -> "Core apps such as phone, texts, contacts and keyboard. You can freeze them if you have a replacement – one at a time, after a prompt. While one of them is the phone's default app, the app refuses. Entries with a lock are the system base: they stay locked because the phone would no longer boot or be usable without them."
+        else -> "Everything that is currently disabled or removed for you on this phone – whether by this app, the PC script, Canta, yourself or the factory. Tap an entry to release it or bring it back."
     }
     override fun listSummary(present: Int, all: Int) = "$present of $all present on this phone"
     override fun showMissing(n: Int) = "Show missing ($n)"
@@ -495,9 +557,26 @@ object En : Txt {
     override val systemSettings = "Open app info"
     override val removeFromList = "Take off my list"
     override val freezeVsRemove = "Freezing is the gentle way. Some phones ignore it for certain system apps – then “Remove” helps (uninstall for you, can be brought back any time)."
-    override val protectedHint = "Protected: this app is not frozen or removed because the phone needs it."
+    override val protectedHint = "Locked: part of the system base. The app neither freezes nor removes it because the phone would no longer boot or be usable without it."
+    override val cautionHint = "Caution: core app. Only freeze it if another app takes over its job."
+    override val cautionTitle = "Really switch off a core app?"
+    override val cautionBody = "First make sure another app takes over this job and is set as default in the settings. You can undo this at any time on the “Off” tab."
+    override val cautionConfirm = "I have a replacement"
+    override fun defaultRole(role: DefaultRole) = when (role) {
+        DefaultRole.KEYBOARD -> "active keyboard"
+        DefaultRole.DIALER -> "default phone app"
+        DefaultRole.SMS -> "default SMS app"
+        DefaultRole.LAUNCHER -> "default home screen"
+    }
+    override fun defaultHint(role: DefaultRole) = when (role) {
+        DefaultRole.KEYBOARD -> "This is your active keyboard right now. Select another keyboard first (Settings → System → Keyboard), otherwise you cannot type anything – not even your PIN."
+        DefaultRole.DIALER -> "This is your default phone app right now. Set another one first (Settings → Apps → Default apps), otherwise no calls are possible."
+        DefaultRole.SMS -> "This is your default SMS app right now. Set another one first (Settings → Apps → Default apps), otherwise no texts arrive."
+        DefaultRole.LAUNCHER -> "This is your home screen right now. Set another one first (Settings → Apps → Default apps), otherwise the phone has no interface."
+    }
+    override fun reportDefaultApp(n: Int) = "$n skipped because they are the phone's default app right now (keyboard, phone, SMS or home screen). Set a replacement as default first."
     override val criticalDescription = "Part of the system base (interface, settings, telephony or installer). Without it the phone becomes unusable."
-    override val noDescription = "No description available – you added this app yourself. Only freeze what you know; when in doubt, search for the package name."
+    override val noDescription = "There is no description for this app – it is on none of the prepared lists. Only freeze what you know; when in doubt, search for the package name."
     override val manualTitle = "Without Shizuku"
     override val manualBody = "Without Shizuku the app may not change anything. You can do it yourself: “Open app info” → “Disable” (if the phone offers the button), or on a PC with this ADB command:"
     override val copyCommand = "Copy command"
@@ -527,7 +606,7 @@ object En : Txt {
     override fun reportIgnoredTitle(n: Int) = "$n cannot be frozen"
     override val reportIgnoredBody = "The phone accepts the command but keeps the app active. That is a vendor lock. Way out: remove it for you – the copy in the system and the app data stay, “Bring back” undoes it."
     override fun reportFailedTitle(n: Int) = "$n failed"
-    override fun reportProtected(n: Int) = "$n protected apps were skipped."
+    override fun reportProtected(n: Int) = "$n locked system apps were skipped."
     override fun removeInstead(n: Int) = if (n == 1) "Remove instead" else "Remove these $n"
     override fun removeTitle(n: Int) = if (n == 1) "Remove app?" else "Remove $n apps?"
     override val removeBody = "The app is uninstalled for you only (like Canta does). The copy in the system and the app data are kept. Undo: “Bring back” in the app view or “Reset everything” on the home screen – a factory reset restores it too."
@@ -544,7 +623,8 @@ object En : Txt {
         Outcome.RESTORED -> "brought back"
         Outcome.RESTORE_FAILED -> "bringing back failed"
         Outcome.NOT_PRESENT -> "not present"
-        Outcome.PROTECTED -> "protected"
+        Outcome.PROTECTED -> "locked (system base)"
+        Outcome.DEFAULT_APP -> "is the default app right now"
         Outcome.INVALID_NAME -> "invalid package name"
     }
 
@@ -571,6 +651,14 @@ object En : Txt {
     override val statFrozen = "frozen"
     override val statRemoved = "removed"
     override val statSafeActive = "safe ones still active"
+    override val statNote = "The counters show the state of the whole phone – including what the PC script, Canta or you switched off before. Tap to open the list."
+    override val bulkButton = "Everything at once …"
+    override val bulkTitle = "Freeze everything at once"
+    override val bulkBody = "Choose the lists. Everything from them that is still active on the phone gets frozen."
+    override fun bulkList(name: String, n: Int) = "$name ($n active)"
+    override val bulkOptionalWarning = "Optional includes Chrome, Google Photos, Android Auto and the Private Safe (content unreachable afterwards). Better pick those one by one."
+    override val bulkNote = "Core apps from “Caution” are never included – switch those off one at a time. You can also tick entries in the lists; the selection is kept across all tabs."
+    override fun bulkConfirm(n: Int) = if (n == 0) "Nothing to do" else "Freeze $n"
     override fun driftTitle(n: Int) = if (n == 1) "1 app is active again" else "$n apps are active again"
     override val driftBody = "You had frozen or removed these apps. Something – usually a system update – brought them back:"
     override val driftApply = "Apply again"
@@ -579,7 +667,7 @@ object En : Txt {
     override val startTitle = "Get started"
     override val startBody = "Start with the safe list: choose what should go and tap “Freeze”. Your own wishes go into your own list."
     override val resetTitle = "Reset everything"
-    override val resetBody = "Releases every app this app froze and brings back the removed ones."
+    override val resetBody = "Releases every app this app froze and brings back the removed ones. Whatever was already off before (PC script, Canta) is released one by one on the “Off” tab."
     override val resetButton = "Reset"
     override fun resetConfirmBody(frozen: Int, removed: Int) =
         "$frozen frozen apps will be released, $removed removed ones brought back. The telemetry lock is reset on the “Telemetry” tab."
@@ -642,6 +730,17 @@ object En : Txt {
             ),
         ),
         HelpTopic(
+            "Starting Shizuku from a PC (instead of Wi-Fi pairing)",
+            listOf(
+                "Android has no permission that could be granted once over ADB and would allow disabling other apps for good. The ADB route therefore is: start Shizuku from the PC.",
+                "1. Install Shizuku and open it once.",
+                "2. Turn on USB debugging, connect the phone to the PC by cable, confirm the prompt on the phone.",
+                "3. Run on the PC: adb shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh",
+                "4. Come back to this app and tap “Allow access”.",
+                "This too only lasts until the next reboot of the phone – just like starting through wireless debugging. That is an Android rule, not a limitation of this app.",
+            ),
+        ),
+        HelpTopic(
             "Without Shizuku: view-only mode",
             listOf(
                 "Android does not let normal apps disable other apps – and that permission cannot be granted by hand either. Without Shizuku the app can only show and guide.",
@@ -676,7 +775,8 @@ object En : Txt {
         HelpTopic(
             "What the app never touches",
             listOf(
-                "Phone, texts, contacts, keyboard, interface, settings and a few system components are on the “Protected” list. The app neither freezes nor removes them – not through your own list either.",
+                "Only the system base is locked: interface, settings, telephony service, installer and three system components. Without them the phone no longer boots or cannot be used.",
+                "Core apps such as phone, texts, contacts, calendar, Gmail and Gboard are on the “Caution” tab. You can switch them off if you have a replacement. The app only refuses while one of them is the default app – the same goes for any other keyboard, phone, SMS or launcher app.",
                 "Everything else is your call. Read the description, especially on the “Optional” list: the Private Safe, for example, is unreachable while frozen.",
             ),
         ),
