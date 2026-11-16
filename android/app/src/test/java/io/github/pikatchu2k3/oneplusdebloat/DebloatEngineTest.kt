@@ -102,7 +102,11 @@ private class MemoryJournal : Journal {
 class DebloatEngineTest {
     private val phone = FakePhone()
     private val journal = MemoryJournal()
-    private val engine = DebloatEngine(phone, phone, journal, setOf("com.google.android.dialer"), userId = 0)
+    private val defaults = mutableSetOf<String>()
+    private val engine = DebloatEngine(
+        phone, phone, journal, setOf("com.android.systemui"), userId = 0,
+        isDefaultApp = { it in defaults },
+    )
 
     private val browser = "com.heytap.browser"
     private val egg = "com.android.egg"
@@ -150,13 +154,25 @@ class DebloatEngineTest {
 
     @Test
     fun protectedPackagesAreNeverFrozenOrRemovedButCanBeReleased() = runTest {
-        val dialer = "com.google.android.dialer"
-        phone.states[dialer] = PkgState.ACTIVE
-        assertEquals(Outcome.PROTECTED, engine.freeze(dialer).outcome)
-        assertEquals(Outcome.PROTECTED, engine.remove(dialer).outcome)
+        val systemUi = "com.android.systemui"
+        phone.states[systemUi] = PkgState.ACTIVE
+        assertEquals(Outcome.PROTECTED, engine.freeze(systemUi).outcome)
+        assertEquals(Outcome.PROTECTED, engine.remove(systemUi).outcome)
         assertTrue(phone.commands.isEmpty())
-        phone.states[dialer] = PkgState.FROZEN
-        assertEquals(Outcome.THAWED, engine.thaw(dialer).outcome)
+        phone.states[systemUi] = PkgState.FROZEN
+        assertEquals(Outcome.THAWED, engine.thaw(systemUi).outcome)
+    }
+
+    @Test
+    fun theCurrentDefaultAppIsRefusedUntilItIsReplaced() = runTest {
+        val keyboard = "com.google.android.inputmethod.latin"
+        phone.states[keyboard] = PkgState.ACTIVE
+        defaults += keyboard
+        assertEquals(Outcome.DEFAULT_APP, engine.freeze(keyboard).outcome)
+        assertEquals(Outcome.DEFAULT_APP, engine.remove(keyboard).outcome)
+        assertTrue(phone.commands.isEmpty())
+        defaults -= keyboard   // the user selected another keyboard
+        assertEquals(Outcome.FROZEN, engine.freeze(keyboard).outcome)
     }
 
     @Test

@@ -14,7 +14,8 @@ Screenshot-Tests auf der JVM geprüft.
 |---|---|---|
 | Shizuku | enthalten | voll (gleiche Rechte wie `adb shell`) |
 | Ohne alles (Anzeige-Modus) | enthalten | Zustand, Erklärungen, Sprung zur App-Info, ADB-Befehl zum Kopieren |
-| Eingebautes Wireless ADB | geplant (Etappe 2) | voll |
+| Shizuku per PC-ADB gestartet | Anleitung in der App (Hilfe) | voll, bis zum nächsten Neustart |
+| Eingebautes Wireless ADB | offen (Etappe 2) | voll |
 
 Android vergibt die Berechtigung zum Deaktivieren fremder Apps nur an System-Apps; sie lässt sich
 nicht per `pm grant` setzen. Deshalb kann der Anzeige-Modus nichts ändern.
@@ -48,7 +49,19 @@ Benötigt JDK 17+ und das Android-SDK (Plattform 35). GitHub Actions baut die AP
 damit jede Testversion über die vorige installiert werden kann. Für eine echte Veröffentlichung
 gehört ein eigener, geheimer Schlüssel her; danach ist einmalig eine Neuinstallation nötig.
 
+## Listen in der App
+
+- **Sicher / Optional / Eigene** – per Häkchen wählbar; die Auswahl gilt über alle Tabs. „Alle auf einmal“ auf der
+  Startseite friert ganze Listen ein.
+- **Vorsicht** – die „Nie anfassen“-Liste des Skripts, aufgeteilt: Telefon, SMS, Kontakte, Kalender, Gmail und Gboard
+  lassen sich nach einer Rückfrage einzeln einfrieren. Die App verweigert es, solange ein Paket die Standard-App für
+  Tastatur, Telefon, SMS oder Startbildschirm ist (gilt für jedes Paket, auch aus der eigenen Liste). System-Basis
+  und drei Systembausteine bleiben gesperrt (`"locked": true` im Katalog, festgelegt in `tools/gen_app_catalog.py`).
+- **Aus** – alles, was auf dem Telefon deaktiviert oder für den Nutzer entfernt ist, egal wodurch. Daraus speisen
+  sich auch die Zähler der Startseite.
+
 ## Bewusst anders als das Skript
 
 - Kein `com.android.shell`-Trick: Er ist unbelegt, und die App läuft über Shizuku selbst als Shell.
 - „Zurücksetzen“ betrifft nur, was die App selbst eingefroren oder entfernt hat (Journal).
+- Kern-Apps der „Nie anfassen“-Liste sind in der App abschaltbar (siehe oben); das Skript sperrt sie weiterhin.

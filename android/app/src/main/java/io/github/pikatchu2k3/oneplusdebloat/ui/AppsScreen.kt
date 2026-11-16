@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -73,7 +74,8 @@ fun AppsScreen(
         0 -> vm.safeIds
         1 -> vm.optionalIds
         2 -> ui.custom
-        else -> vm.neverIds
+        3 -> vm.cautionIds
+        else -> ui.deviceFrozen + ui.deviceRemoved
     }
     val all = ui.rowsOf(ids)
     val present = all.filter { it.state != PkgState.NOT_PRESENT }
@@ -81,7 +83,7 @@ fun AppsScreen(
         query.isBlank() || it.label.contains(query, ignoreCase = true) || it.pkg.contains(query, ignoreCase = true)
     }
     val selectedHere = ui.selected.filter { it in ids }
-    val selectable = present.filter { it.state == PkgState.ACTIVE && !it.isProtected }
+    val selectable = if (listTab < 3) present.filter { it.bulkSelectable } else emptyList()
 
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri != null) {
@@ -105,7 +107,7 @@ fun AppsScreen(
 
     Column(Modifier.fillMaxSize()) {
         ScrollableTabRow(selectedTabIndex = listTab, edgePadding = 8.dp) {
-            val titles = listOf(t.listSafe, t.listOptional, t.listCustom, t.listNever)
+            val titles = listOf(t.listSafe, t.listOptional, t.listCustom, t.listCaution, t.listOff)
             titles.forEachIndexed { index, title ->
                 Tab(selected = listTab == index, onClick = { onListTab(index) }, text = { Text(title) })
             }
@@ -152,9 +154,9 @@ fun AppsScreen(
                                 label = { Text(t.showMissing(all.size - present.size)) },
                             )
                         }
-                        if (listTab != 3 && selectable.isNotEmpty()) {
+                        if (selectable.isNotEmpty()) {
                             TextButton(onClick = {
-                                if (selectedHere.size == selectable.size) vm.clearSelection()
+                                if (selectedHere.size == selectable.size) vm.deselect(selectedHere)
                                 else vm.selectAllActive(ids)
                             }) { Text(if (selectedHere.size == selectable.size) t.selectNone else t.selectAllActive(selectable.size)) }
                         }
@@ -178,20 +180,21 @@ fun AppsScreen(
                 AppRowItem(
                     row = row, vm = vm,
                     checked = row.pkg in ui.selected,
-                    checkable = listTab != 3 && row.state == PkgState.ACTIVE && !row.isProtected,
+                    checkable = listTab < 3 && row.bulkSelectable,
                     onToggle = { vm.toggle(row.pkg) },
                     onClick = { onDetail(row.pkg) },
                 )
             }
         }
 
-        if (selectedHere.isNotEmpty()) {
+        // The selection is kept across the tabs, so one tap freezes picks from several lists.
+        if (ui.selected.isNotEmpty()) {
             Surface(tonalElevation = 6.dp, shadowElevation = 8.dp) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(t.selectedCount(selectedHere.size), modifier = Modifier.weight(1f), fontWeight = FontWeight.Medium)
+                        Text(t.selectedCount(ui.selected.size), modifier = Modifier.weight(1f), fontWeight = FontWeight.Medium)
                         TextButton(onClick = vm::clearSelection) { Text(t.selectNone) }
-                        Button(onClick = { vm.freeze(selectedHere) }, enabled = ui.ready) { Text(t.freeze) }
+                        Button(onClick = { vm.freeze(ui.selected.toList()) }, enabled = ui.ready) { Text(t.freeze) }
                     }
                     if (!ui.ready) Text(t.needsShellShort, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -221,7 +224,11 @@ private fun AppRowItem(
             Checkbox(checked = checked, onCheckedChange = { onToggle() })
         } else {
             Box(Modifier.width(48.dp), contentAlignment = Alignment.Center) {
-                if (row.isProtected) Icon(Icons.Filled.Lock, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                when {
+                    row.isProtected -> Icon(Icons.Filled.Lock, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    row.state == PkgState.ACTIVE && (row.isCaution || row.defaultRole != null) ->
+                        Icon(Icons.Filled.Warning, null, tint = MaterialTheme.colorScheme.error)
+                }
             }
         }
         AppIcon(row.pkg, row.label, vm)

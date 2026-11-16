@@ -22,6 +22,7 @@ import io.github.pikatchu2k3.oneplusdebloat.core.ShellUnavailableException
 import io.github.pikatchu2k3.oneplusdebloat.core.isValidPackageName
 import io.github.pikatchu2k3.oneplusdebloat.data.AndroidPackageSource
 import io.github.pikatchu2k3.oneplusdebloat.data.AppStore
+import io.github.pikatchu2k3.oneplusdebloat.data.DefaultRole
 import io.github.pikatchu2k3.oneplusdebloat.shizuku.ShizukuBackend
 import io.github.pikatchu2k3.oneplusdebloat.shizuku.ShizukuState
 import kotlinx.coroutines.Dispatchers
@@ -42,8 +43,17 @@ data class AppRow(
     val state: PkgState,
     val isSystem: Boolean,
     val entry: CatalogEntry?,
+    /** System base or locked system component: never frozen or removed. */
     val isProtected: Boolean,
-)
+    /** Replaceable core app (dialer, keyboard ...): allowed after a warning, one at a time. */
+    val isCaution: Boolean = false,
+    /** Set while this package is the phone's default for a job; freezing is refused until replaced. */
+    val defaultRole: DefaultRole? = null,
+) {
+    /** May be ticked for a batch freeze. */
+    val bulkSelectable: Boolean
+        get() = state == PkgState.ACTIVE && !isProtected && !isCaution && defaultRole == null
+}
 
 /** An installed app offered in the "add to my list" picker. */
 data class PickerApp(val pkg: String, val label: String, val isSystem: Boolean, val state: PkgState)
@@ -72,6 +82,9 @@ data class UiState(
     val custom: List<String> = emptyList(),
     val journalFrozen: Set<String> = emptySet(),
     val journalRemoved: Set<String> = emptySet(),
+    /** Everything disabled / removed for the user on this phone, whoever did it. */
+    val deviceFrozen: List<String> = emptyList(),
+    val deviceRemoved: List<String> = emptyList(),
     val selected: Set<String> = emptySet(),
     val drift: List<DriftEntry> = emptyList(),
     val progress: Progress? = null,
@@ -97,7 +110,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val store = AppStore(app)
     private val shizuku = ShizukuBackend(app)
     private val userId = android.os.Process.myUid() / 100_000
-    private val engine = DebloatEngine(shizuku, packages, store, catalog.protectedPackages, userId)
+    private val engine = DebloatEngine(
+        shizuku, packages, store, catalog.protectedPackages, userId,
+        isDefaultApp = { packages.defaultRoleOf(it) != null },
+    )
     private val icons = ConcurrentHashMap<String, Bitmap>()
 
     private val _ui = MutableStateFlow(UiState())
@@ -105,7 +121,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     val safeIds = catalog.ofKind(ListKind.SAFE).map { it.id }
     val optionalIds = catalog.ofKind(ListKind.OPTIONAL).map { it.id }
-    val neverIds = catalog.ofKind(ListKind.NEVER).map { it.id } + catalog.critical
+    /** The "caution" tab: replaceable core apps first, then the locked system parts. */
+    val cautionIds = catalog.ofKind(ListKind.NEVER).sortedBy { it.locked }.map { it.id } + catalog.critical
     val userIdForCommands: Int get() = userId
 
     init {
@@ -134,9 +151,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     custom = store.custom.sorted(),
                     journalFrozen = store.frozen,
                     journalRemoved = store.removed,
+                    deviceFrozen = snapshot.values.filter { r -> r.state == PkgState.FROZEN }
+                        .sortedBy { r -> r.label.lowercase() }.map { r -> r.pkg },
+                    deviceRemoved = snapshot.values.filter { r -> r.state == PkgState.REMOVED }
+                        .sortedBy { r -> r.label.lowercase() }.map { r -> r.pkg },
                     drift = engine.drift(),
                     log = store.log,
-                    selected = it.selected.filter { p -> snapshot[p]?.state == PkgState.ACTIVE }.toSet(),
+                    selected = it.selected.filter { p -> snapshot[p]?.bulkSelectable == true }.toSet(),
                     loaded = true,
                 )
             }
@@ -151,6 +172,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         ids += store.custom
         ids += store.frozen
         ids += store.removed
+        // Also everything that is already disabled or removed on this phone - by the PC script,
+        // Canta, the user or the factory - so the counters and the "Off" tab show the real picture.
+        val own = getApplication<Application>().packageName
+        for (info in packages.allApps()) {
+            val pkg = info.packageName
+            if (pkg == own || pkg in ids || !isValidPackageName(pkg)) continue
+            if (info.flags and ApplicationInfo.FLAG_INSTALLED == 0 || !info.enabled) ids += pkg
+        }
         return ids.associateWith { pkg ->
             val info = packages.infoOf(pkg)
             val entry = catalog.find(pkg)
@@ -162,6 +191,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 isSystem = info != null && info.flags and ApplicationInfo.FLAG_SYSTEM != 0,
                 entry = entry,
                 isProtected = pkg in protectedPkgs,
+                isCaution = entry?.kind == ListKind.NEVER && !entry.locked,
+                defaultRole = packages.defaultRoleOf(pkg),
             )
         }
     }
@@ -190,10 +221,21 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun selectAllActive(pkgs: List<String>) = _ui.update { s ->
-        s.copy(selected = s.selected + pkgs.filter { p -> s.rows[p].let { it != null && it.state == PkgState.ACTIVE && !it.isProtected } })
+        s.copy(selected = s.selected + pkgs.filter { p -> s.rows[p]?.bulkSelectable == true })
     }
 
     fun clearSelection() = _ui.update { it.copy(selected = emptySet()) }
+    fun deselect(pkgs: Collection<String>) = _ui.update { it.copy(selected = it.selected - pkgs.toSet()) }
+
+    /** Everything from the given lists that is still active and may be frozen in a batch. */
+    fun bulkCandidates(safe: Boolean, optional: Boolean, custom: Boolean): List<String> {
+        val s = _ui.value
+        val ids = LinkedHashSet<String>()
+        if (safe) ids += safeIds
+        if (optional) ids += optionalIds
+        if (custom) ids += s.custom
+        return ids.filter { s.rows[it]?.bulkSelectable == true }
+    }
 
     // ---- actions that need the shell
 

@@ -14,6 +14,8 @@ data class CatalogEntry(
     val name: String = "",
     val de: String = "",
     val en: String = "",
+    /** Only on the "never" list: true = system component that is never frozen or removed. */
+    val locked: Boolean = false,
 ) {
     val kind: ListKind
         get() = when (list) {
@@ -36,9 +38,13 @@ data class Catalog(
 ) {
     fun ofKind(kind: ListKind): List<CatalogEntry> = packages.filter { it.kind == kind }
 
-    /** Packages the app refuses to freeze or remove. */
+    /**
+     * Packages the app refuses to freeze or remove: the system base and the locked system
+     * components. The replaceable core apps (dialer, keyboard ...) are not in here; they are
+     * guarded by the "is it the current default app" check instead.
+     */
     val protectedPackages: Set<String>
-        get() = critical.toSet() + ofKind(ListKind.NEVER).map { it.id }
+        get() = critical.toSet() + ofKind(ListKind.NEVER).filter { it.locked }.map { it.id }
 
     fun find(pkg: String): CatalogEntry? = packages.firstOrNull { it.id == pkg }
 
