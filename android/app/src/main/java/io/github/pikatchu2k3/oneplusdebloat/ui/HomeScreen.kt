@@ -3,6 +3,8 @@ package io.github.pikatchu2k3.oneplusdebloat.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.pikatchu2k3.oneplusdebloat.BuildConfig
 import io.github.pikatchu2k3.oneplusdebloat.core.PkgState
@@ -68,10 +71,10 @@ fun HomeScreen(
         val frozen = ui.journalFrozen.count { ui.rows[it]?.state == PkgState.FROZEN }
         val removed = ui.journalRemoved.count { ui.rows[it]?.state == PkgState.REMOVED }
         val safeActive = vm.safeIds.count { ui.rows[it]?.state == PkgState.ACTIVE }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatCard(frozen.toString(), t.statFrozen, Modifier.weight(1f))
-            StatCard(removed.toString(), t.statRemoved, Modifier.weight(1f))
-            StatCard(safeActive.toString(), t.statSafeActive, Modifier.weight(1f)) { onOpenList(0) }
+        Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            StatCard(frozen.toString(), t.statFrozen, Modifier.weight(1f).fillMaxHeight())
+            StatCard(removed.toString(), t.statRemoved, Modifier.weight(1f).fillMaxHeight())
+            StatCard(safeActive.toString(), t.statSafeActive, Modifier.weight(1f).fillMaxHeight()) { onOpenList(0) }
         }
 
         if (ui.drift.isNotEmpty()) {
@@ -195,6 +198,7 @@ private fun StatCard(value: String, label: String, modifier: Modifier = Modifier
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
+                textAlign = TextAlign.Center,
             )
         }
     }

@@ -3,6 +3,7 @@ package io.github.pikatchu2k3.oneplusdebloat
 import android.app.Application
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
+import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -79,7 +80,14 @@ class ScreenshotTest {
         install("com.google.android.dialer", "Telefon")
         install("com.google.android.inputmethod.latin", "Gboard")
         vm = MainViewModel(app)
-        rule.waitUntil(10_000) { vm.ui.value.loaded }
+        // The view model loads on a background thread and publishes on the main looper,
+        // which Robolectric only runs when asked to.
+        val deadline = System.currentTimeMillis() + 10_000
+        while (!vm.ui.value.loaded && System.currentTimeMillis() < deadline) {
+            shadowOf(Looper.getMainLooper()).idle()
+            Thread.sleep(20)
+        }
+        check(vm.ui.value.loaded) { "view model did not finish loading" }
     }
 
     private val frozenByUs = setOf(

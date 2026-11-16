@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **Android app, stage 1 (`android/`, version 0.1.0-alpha).** Kotlin/Compose app with the script's feature
+  set: freeze, release, remove for the user, bring back, AppOps lock, post-update check, reset. Access through
+  Shizuku; without it a view-only mode with explanations, a jump to the system app-info page and the ADB
+  command to copy. Custom list with import/export, German and English, description for all 103 packages.
+  The package lists are generated from `oneplus_cleanup.bat` (`tools/gen_app_catalog.py`). Built-in wireless
+  ADB is planned as stage 2. **Not tested on a device** – unit tests against a fake phone and JVM screenshots only.
+
 ## v0.9.7-beta — pre-release
 
 - **Menu 7: remove for the user when freezing is ignored.** On a real device `com.heytap.browser` answered

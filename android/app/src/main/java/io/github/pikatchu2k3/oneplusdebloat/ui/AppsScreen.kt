@@ -6,6 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -53,6 +55,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import io.github.pikatchu2k3.oneplusdebloat.core.PkgState
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AppsScreen(
     ui: UiState,
@@ -142,7 +145,7 @@ fun AppsScreen(
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         )
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (all.size > present.size) {
                             FilterChip(
                                 selected = showMissing, onClick = { showMissing = !showMissing },
