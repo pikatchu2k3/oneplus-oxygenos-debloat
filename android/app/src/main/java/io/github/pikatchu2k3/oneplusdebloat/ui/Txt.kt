@@ -63,6 +63,7 @@ interface Txt {
     val pickerTitle: String
     val pickerIntro: String
     val showSystemApps: String
+    fun pickerFilter(f: PickerFilter, n: Int): String
     fun addCount(n: Int): String
     val manualAddTitle: String
 
@@ -269,6 +270,13 @@ object De : Txt {
     override val pickerTitle = "Apps hinzufügen"
     override val pickerIntro = "Wähle Apps für deine eigene Liste. Hinzufügen ändert noch nichts – eingefroren wird erst, wenn du es in der Liste auslöst."
     override val showSystemApps = "System-Apps anzeigen"
+    override fun pickerFilter(f: PickerFilter, n: Int) = when (f) {
+        PickerFilter.ALL -> "Alle"
+        PickerFilter.ACTIVE -> "Aktiv"
+        PickerFilter.FROZEN -> "Eingefroren"
+        PickerFilter.SUSPENDED -> "Stillgelegt"
+        PickerFilter.REMOVED -> "Entfernt/versteckt"
+    } + " ($n)"
     override fun addCount(n: Int) = if (n == 0) "Hinzufügen" else "$n hinzufügen"
     override val manualAddTitle = "Paketname von Hand eingeben"
 
@@ -643,6 +651,13 @@ object En : Txt {
     override val pickerTitle = "Add apps"
     override val pickerIntro = "Choose apps for your own list. Adding changes nothing yet – freezing only happens when you start it from the list."
     override val showSystemApps = "Show system apps"
+    override fun pickerFilter(f: PickerFilter, n: Int) = when (f) {
+        PickerFilter.ALL -> "All"
+        PickerFilter.ACTIVE -> "Active"
+        PickerFilter.FROZEN -> "Frozen"
+        PickerFilter.SUSPENDED -> "Suspended"
+        PickerFilter.REMOVED -> "Removed/hidden"
+    } + " ($n)"
     override fun addCount(n: Int) = if (n == 0) "Add" else "Add $n"
     override val manualAddTitle = "Enter a package name by hand"
 

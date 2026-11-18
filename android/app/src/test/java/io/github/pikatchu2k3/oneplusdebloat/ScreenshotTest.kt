@@ -33,6 +33,8 @@ import io.github.pikatchu2k3.oneplusdebloat.ui.HelpScreen
 import io.github.pikatchu2k3.oneplusdebloat.ui.HomeScreen
 import io.github.pikatchu2k3.oneplusdebloat.ui.MainViewModel
 import io.github.pikatchu2k3.oneplusdebloat.ui.OtherWaysDialog
+import io.github.pikatchu2k3.oneplusdebloat.ui.PickerApp
+import io.github.pikatchu2k3.oneplusdebloat.ui.PickerDialog
 import io.github.pikatchu2k3.oneplusdebloat.ui.Report
 import io.github.pikatchu2k3.oneplusdebloat.ui.ReportDialog
 import io.github.pikatchu2k3.oneplusdebloat.ui.TelemetryScreen
@@ -268,5 +270,18 @@ class ScreenshotTest {
     fun apps_custom_large_font() = shot("18_apps_custom_large_font") {
         val custom = listOf("com.oplus.games", "com.coloros.video", "net.oneplus.weather", browser)
         AppsScreen(ready().copy(custom = custom), vm, 2, {}, {})
+    }
+
+    @Test
+    fun picker_with_state_filters() = shot("19_picker_filters") {
+        val apps = listOf(
+            PickerApp("idm.internet.download.manager.plus", "1DM+", false, PkgState.ACTIVE),
+            PickerApp("com.oplus.gleanerservice", "Intelligente Datensensorik", true, PkgState.SUSPENDED),
+            PickerApp("com.oneplus.account", "OnePlus Account", true, PkgState.REMOVED),
+            PickerApp("com.oplus.aiunit", "AI-Dienst-Engine", true, PkgState.FROZEN),
+            PickerApp("com.android.traceur", "Ablaufverfolgung", true, PkgState.ACTIVE),
+            PickerApp("com.beemdevelopment.aegis", "Aegis", false, PkgState.ACTIVE),
+        )
+        PickerDialog(apps, emptySet(), vm, {})
     }
 }

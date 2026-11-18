@@ -33,6 +33,10 @@
   Deliberately not used: `pm disable-until-used`, `pm hide` and disabling single components – AOSP refuses all
   three to the shell user, so they cannot work through Shizuku/adb. **Not tested on a device.**
 
+- **Android app 0.3.2-alpha:** the "Add apps" picker can filter by state – All, Active, Frozen, Suspended,
+  Removed/hidden – with counts. The filters for switched-off apps always include system apps (nearly all of
+  them are), and each row shows its state.
+
 ## v0.9.8-beta — pre-release
 
 - **Menu 7: suspend when removing is refused too.** Newer OxygenOS answers `pm uninstall -k --user 0` for some

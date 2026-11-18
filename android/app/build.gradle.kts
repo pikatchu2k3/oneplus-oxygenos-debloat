@@ -14,8 +14,8 @@ android {
         applicationId = "io.github.pikatchu2k3.oneplusdebloat"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "0.3.1-alpha"
+        versionCode = 5
+        versionName = "0.3.2-alpha"
     }
 
     signingConfigs {
