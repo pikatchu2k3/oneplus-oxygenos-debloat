@@ -33,6 +33,8 @@
   Deliberately not used: `pm disable-until-used`, `pm hide` and disabling single components – AOSP refuses all
   three to the shell user, so they cannot work through Shizuku/adb. **Not tested on a device.**
 
+- **Android app 0.3.3-alpha:** the picker's "Show system apps" switch is replaced by an origin filter – All apps /
+  Only your apps / Only system apps – with counts; it combines with the state filter. Default is "All apps".
 - **Android app 0.3.2-alpha:** the "Add apps" picker can filter by state – All, Active, Frozen, Suspended,
   Removed/hidden – with counts. The filters for switched-off apps always include system apps (nearly all of
   them are), and each row shows its state.

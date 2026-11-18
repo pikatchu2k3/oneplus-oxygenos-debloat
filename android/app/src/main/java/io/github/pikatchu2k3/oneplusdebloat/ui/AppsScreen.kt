@@ -255,9 +255,17 @@ enum class PickerFilter(val states: Set<PkgState>) {
     REMOVED(setOf(PkgState.REMOVED, PkgState.HIDDEN));
 
     fun matches(state: PkgState) = this == ALL || state in states
+}
 
-    /** Switched-off apps are nearly always system apps, so these filters ignore "show system apps". */
-    val includesSystem: Boolean get() = this != ALL && this != ACTIVE
+/** Origin filter of the picker: everything, only apps the user installed, or only pre-installed ones. */
+enum class PickerSource {
+    ALL, USER, SYSTEM;
+
+    fun matches(isSystem: Boolean) = when (this) {
+        ALL -> true
+        USER -> !isSystem
+        SYSTEM -> isSystem
+    }
 }
 
 /** Full-screen chooser for adding any installed app to the user's own list. */
@@ -266,7 +274,8 @@ enum class PickerFilter(val states: Set<PkgState>) {
 internal fun PickerDialog(apps: List<PickerApp>, already: Set<String>, vm: MainViewModel, onClose: () -> Unit) {
     val t = LocalTxt.current
     var query by remember { mutableStateOf("") }
-    var systemToo by remember { mutableStateOf(false) }
+    // "All" by default: switched-off apps are nearly always system apps and should not hide behind a switch.
+    var source by remember { mutableStateOf(PickerSource.ALL) }
     var filter by remember { mutableStateOf(PickerFilter.ALL) }
     var picked by remember { mutableStateOf(setOf<String>()) }
     var manual by remember { mutableStateOf("") }
@@ -274,10 +283,10 @@ internal fun PickerDialog(apps: List<PickerApp>, already: Set<String>, vm: MainV
     val searched = apps.filter {
         it.pkg !in already && (query.isBlank() || it.label.contains(query, true) || it.pkg.contains(query, true))
     }
-    fun inFilter(f: PickerFilter, app: PickerApp) =
-        f.matches(app.state) && (f.includesSystem || systemToo || !app.isSystem)
-    val counts = PickerFilter.entries.associateWith { f -> searched.count { inFilter(f, it) } }
-    val shown = searched.filter { inFilter(filter, it) }
+    // Each row of chips counts what tapping it would show, given the other row's choice.
+    val stateCounts = PickerFilter.entries.associateWith { f -> searched.count { f.matches(it.state) && source.matches(it.isSystem) } }
+    val sourceCounts = PickerSource.entries.associateWith { s -> searched.count { s.matches(it.isSystem) && filter.matches(it.state) } }
+    val shown = searched.filter { filter.matches(it.state) && source.matches(it.isSystem) }
 
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxSize()) {
@@ -302,16 +311,23 @@ internal fun PickerDialog(apps: List<PickerApp>, already: Set<String>, vm: MainV
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        if (!filter.includesSystem) {
-                            FilterChip(selected = systemToo, onClick = { systemToo = !systemToo }, label = { Text(t.showSystemApps) })
+                        for (s in PickerSource.entries) {
+                            FilterChip(
+                                selected = source == s,
+                                onClick = { source = s },
+                                label = { Text(t.pickerSource(s, sourceCounts.getValue(s))) },
+                            )
                         }
+                    }
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
                         for (f in PickerFilter.entries) {
-                            // Off states only show up when something is in them (or the chip is selected).
-                            if (f.includesSystem && counts.getValue(f) == 0 && filter != f) continue
                             FilterChip(
                                 selected = filter == f,
                                 onClick = { filter = f },
-                                label = { Text(t.pickerFilter(f, counts.getValue(f))) },
+                                label = { Text(t.pickerFilter(f, stateCounts.getValue(f))) },
                             )
                         }
                     }
