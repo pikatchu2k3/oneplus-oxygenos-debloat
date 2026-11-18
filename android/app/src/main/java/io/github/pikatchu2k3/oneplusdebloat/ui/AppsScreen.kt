@@ -246,18 +246,38 @@ private fun AppRowItem(
     }
 }
 
+/** State filter of the "add apps" picker. REMOVED also covers apps hidden by a device owner. */
+enum class PickerFilter(val states: Set<PkgState>) {
+    ALL(emptySet()),
+    ACTIVE(setOf(PkgState.ACTIVE)),
+    FROZEN(setOf(PkgState.FROZEN)),
+    SUSPENDED(setOf(PkgState.SUSPENDED)),
+    REMOVED(setOf(PkgState.REMOVED, PkgState.HIDDEN));
+
+    fun matches(state: PkgState) = this == ALL || state in states
+
+    /** Switched-off apps are nearly always system apps, so these filters ignore "show system apps". */
+    val includesSystem: Boolean get() = this != ALL && this != ACTIVE
+}
+
 /** Full-screen chooser for adding any installed app to the user's own list. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun PickerDialog(apps: List<PickerApp>, already: Set<String>, vm: MainViewModel, onClose: () -> Unit) {
+internal fun PickerDialog(apps: List<PickerApp>, already: Set<String>, vm: MainViewModel, onClose: () -> Unit) {
     val t = LocalTxt.current
     var query by remember { mutableStateOf("") }
     var systemToo by remember { mutableStateOf(false) }
+    var filter by remember { mutableStateOf(PickerFilter.ALL) }
     var picked by remember { mutableStateOf(setOf<String>()) }
     var manual by remember { mutableStateOf("") }
-    val shown = apps.filter {
-        it.pkg !in already && (systemToo || !it.isSystem) &&
-            (query.isBlank() || it.label.contains(query, true) || it.pkg.contains(query, true))
+    // Search applies to every chip; each chip counts exactly what tapping it shows.
+    val searched = apps.filter {
+        it.pkg !in already && (query.isBlank() || it.label.contains(query, true) || it.pkg.contains(query, true))
     }
+    fun inFilter(f: PickerFilter, app: PickerApp) =
+        f.matches(app.state) && (f.includesSystem || systemToo || !app.isSystem)
+    val counts = PickerFilter.entries.associateWith { f -> searched.count { inFilter(f, it) } }
+    val shown = searched.filter { inFilter(filter, it) }
 
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxSize()) {
@@ -278,7 +298,23 @@ private fun PickerDialog(apps: List<PickerApp>, already: Set<String>, vm: MainVi
                         leadingIcon = { Icon(Icons.Filled.Search, null) },
                         placeholder = { Text(t.searchHint) },
                     )
-                    FilterChip(selected = systemToo, onClick = { systemToo = !systemToo }, label = { Text(t.showSystemApps) })
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        if (!filter.includesSystem) {
+                            FilterChip(selected = systemToo, onClick = { systemToo = !systemToo }, label = { Text(t.showSystemApps) })
+                        }
+                        for (f in PickerFilter.entries) {
+                            // Off states only show up when something is in them (or the chip is selected).
+                            if (f.includesSystem && counts.getValue(f) == 0 && filter != f) continue
+                            FilterChip(
+                                selected = filter == f,
+                                onClick = { filter = f },
+                                label = { Text(t.pickerFilter(f, counts.getValue(f))) },
+                            )
+                        }
+                    }
                 }
                 HorizontalDivider()
                 LazyColumn(Modifier.weight(1f)) {
@@ -298,7 +334,10 @@ private fun PickerDialog(apps: List<PickerApp>, already: Set<String>, vm: MainVi
                                 Text(app.label, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 PackageName(app.pkg)
                             }
-                            if (app.isSystem) Pill(t.systemApp, MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant)
+                            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                if (app.state != PkgState.ACTIVE) StateChip(app.state)
+                                if (app.isSystem) Pill(t.systemApp, MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                         }
                     }
                     item {
