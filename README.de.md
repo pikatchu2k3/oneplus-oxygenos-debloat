@@ -1,6 +1,6 @@
 # OnePlus OxygenOS & ColorOS Debloat (ADB)
 
-> ## ⚠️ VORABVERSION — v0.9.6-beta
+> ## ⚠️ VORABVERSION — v0.9.8-beta
 >
 > Das hier ist eine **Vorabversion**. Es kann haken, und die Paketlisten passen nicht zwangsläufig zu
 > jedem Modell und jeder Region.
@@ -37,6 +37,8 @@ English version: [README.md](README.md)
 - Protokolliert jedes Einfrieren, damit auch einzeln eingefrorene Pakete zurückkommen
 - Ignoriert das Telefon das Einfrieren (manche OnePlus-Systempakete, z. B. `com.heytap.browser`), bietet Menü 7
   stattdessen an, das Paket für den Nutzer zu entfernen — nur nach Bestätigung, umkehrbar, protokolliert in `entfernt.log`
+- Lehnt das Telefon auch das ab (neuere OxygenOS: `only root can delete system app for a particular user`), bietet
+  Menü 7 an, das Paket **stillzulegen** — umkehrbar, protokolliert in `stillgelegt.log`
 
 ## Was es nicht macht
 
@@ -120,6 +122,27 @@ adb shell pm install-existing --user 0 <paket>      :: holt es zurück (Menü 4 
 
 Die APK bleibt in der Systempartition, die App-Daten bleiben erhalten (`-k`), ein Werksreset bringt es ebenfalls
 zurück. Menü 1 zeigt solche Pakete als `[entfernt]`, Menü 8 meldet, wenn ein Update eines zurückgebracht hat.
+
+### Wenn auch Entfernen abgelehnt wird: stilllegen
+
+Neuere OxygenOS-Versionen lehnen bei manchen System-Apps auch das Entfernen ab
+(`Failure [only root can delete system app for a particular user]`). Ohne Root bleibt dann nur **Stilllegen**;
+Menü 7 bietet es nach dem gescheiterten Entfernen an (oder direkt mit `s`):
+
+```bat
+adb shell pm suspend --user 0 <paket>                          :: laesst sich nicht mehr oeffnen
+adb shell am force-stop --user 0 <paket>
+adb shell cmd appops set <paket> RUN_ANY_IN_BACKGROUND ignore  :: nur je Paket, nie je UID
+adb shell cmd appops set <paket> RUN_IN_BACKGROUND ignore
+adb shell am set-standby-bucket --user 0 <paket> restricted
+```
+
+Schwächer als Einfrieren: Die App lässt sich nicht öffnen und startet nicht von selbst, das System kann sie aber
+kurz binden. Der Erfolg wird über `dumpsys package` (`suspended=true`) geprüft. Protokoll: `stillgelegt.log`;
+Menü 4 und Menü 7 -> `f` machen alles rückgängig (`pm unsuspend`, App-Ops `default`, Standby-Stufe `active`),
+Menü 1 zeigt `[stillgelegt]`, Menü 8 meldet `[WIEDER AKTIV]`. `pm disable-until-used`, `pm hide` und das
+Abschalten einzelner Komponenten gibt es bewusst nicht: Android verweigert alle drei dem adb-Shell-Nutzer. Die
+Android-App kann solche Apps zusätzlich als Geräteinhaber **verstecken** (siehe [android/README.md](android/README.md)).
 
 Ein Werksreset stellt ebenfalls alles wieder her.
 

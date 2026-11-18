@@ -1,6 +1,6 @@
 # OnePlus OxygenOS & ColorOS Debloat (ADB)
 
-> ## ⚠️ PRE-RELEASE — v0.9.6-beta
+> ## ⚠️ PRE-RELEASE — v0.9.8-beta
 >
 > This is a **pre-release**. Things can break, and the package lists may not fit every model or region.
 >
@@ -34,6 +34,8 @@ German version: [README.de.md](README.de.md)
 - Logs every freeze so a rollback also covers packages you froze individually
 - If the phone ignores a freeze (some OnePlus system apps, e.g. `com.heytap.browser`), menu 7 offers to remove the
   package for the user instead — only after confirmation, reversible, logged in `entfernt.log`
+- If the phone refuses that too (newer OxygenOS: `only root can delete system app for a particular user`), menu 7
+  offers to **suspend** the package — reversible, logged in `stillgelegt.log`
 
 ## What it does not do
 
@@ -117,6 +119,27 @@ adb shell pm install-existing --user 0 <package>      :: brings it back (menu 4,
 
 The APK stays in the system partition and the app data is kept (`-k`); a factory reset restores it as well.
 Menu 1 shows such packages as `[entfernt]`, menu 8 reports if an update brought one back.
+
+### When removing is refused too: suspending
+
+Newer OxygenOS versions also refuse the removal for some system apps
+(`Failure [only root can delete system app for a particular user]`). Without root the remaining way is to
+**suspend** the package; menu 7 offers it after a failed removal (or directly with `s`):
+
+```bat
+adb shell pm suspend --user 0 <package>                          :: cannot be opened any more
+adb shell am force-stop --user 0 <package>
+adb shell cmd appops set <package> RUN_ANY_IN_BACKGROUND ignore  :: per package, never per uid
+adb shell cmd appops set <package> RUN_IN_BACKGROUND ignore
+adb shell am set-standby-bucket --user 0 <package> restricted
+```
+
+Weaker than freezing: the app cannot be opened and does not start on its own, but the system can still bind to
+it briefly. Success is checked via `dumpsys package` (`suspended=true`). Logged in `stillgelegt.log`; menu 4 and
+menu 7 -> `f` undo everything (`pm unsuspend`, app-ops `default`, bucket `active`), menu 1 shows `[stillgelegt]`,
+menu 8 reports `[WIEDER AKTIV]`. `pm disable-until-used`, `pm hide` and disabling single components are not
+offered: Android refuses all three to the adb shell user. The Android app can additionally **hide** such apps as
+device owner (see [android/README.md](android/README.md)).
 
 A factory reset also restores everything.
 

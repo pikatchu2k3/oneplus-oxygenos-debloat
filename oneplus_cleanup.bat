@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableDelayedExpansion
-set "APP_VERSION=0.9.7-beta"
+set "APP_VERSION=0.9.8-beta"
 title OnePlus Clean-Up v%APP_VERSION% - OxygenOS / ColorOS - per ADB
 color 0B
 REM ============================================================
@@ -153,7 +153,7 @@ goto :done
 :reset
 cls
 echo RESET - alles wieder aktivieren
-echo Betrifft nur Pakete, die dieses Skript eingefroren oder in Menue 7 entfernt hat.
+echo Betrifft nur Pakete, die dieses Skript eingefroren oder in Menue 7 entfernt/stillgelegt hat.
 echo Mit Canta deinstallierte Apps holt "pm install-existing" zurueck (siehe Anleitung).
 call :confirm
 if /i not "%GO%"=="j" goto :menu
@@ -169,11 +169,16 @@ set /a RFAIL=0
 if exist "%~dp0entfernt.log" (
     for /f "usebackq delims=" %%p in ("%~dp0entfernt.log") do call :restorepkg %%p
 )
+set /a SFAIL=0
+if exist "%~dp0stillgelegt.log" (
+    for /f "usebackq delims=" %%p in ("%~dp0stillgelegt.log") do call :unneutralize %%p
+)
 echo.
 echo Ergebnis: %OK% Pakete wieder aktiviert bzw. zurueckgeholt
 del "%~dp0eingefroren.log" >nul 2>nul
-REM Das Entfernt-Log nur loeschen, wenn alles zurueckkam - sonst geht der Rueckweg verloren
+REM Die Logs nur loeschen, wenn alles zurueckkam - sonst geht der Rueckweg verloren
 if %RFAIL% EQU 0 del "%~dp0entfernt.log" >nul 2>nul
+if %SFAIL% EQU 0 del "%~dp0stillgelegt.log" >nul 2>nul
 goto :done
 
 :appops
@@ -212,7 +217,7 @@ for %%p in (%APPOPS_LIST%) do (
 )
 echo   %SOK% gesperrt, %SOPEN% offen, %SMISS% nicht vorhanden
 echo.
-echo --- EINGEFROREN / ENTFERNT (Logs eingefroren.log, entfernt.log) ---
+echo --- EINGEFROREN / ENTFERNT / STILLGELEGT (eingefroren.log, entfernt.log, stillgelegt.log) ---
 set /a LOK=0
 set /a LBACK=0
 set "SEEN= "
@@ -222,8 +227,11 @@ if exist "%~dp0eingefroren.log" (
 if exist "%~dp0entfernt.log" (
     for /f "usebackq delims=" %%p in ("%~dp0entfernt.log") do call :chkremoved %%p
 )
+if exist "%~dp0stillgelegt.log" (
+    for /f "usebackq delims=" %%p in ("%~dp0stillgelegt.log") do call :chksuspended %%p
+)
 if "%LOK%%LBACK%"=="00" echo   Kein Log vorhanden - dann zeigt Menue 1 den Stand der Listen.
-echo   %LOK% weiter eingefroren/entfernt, %LBACK% wieder aktiv
+echo   %LOK% weiter eingefroren/entfernt/stillgelegt, %LBACK% wieder aktiv
 if %SOPEN% GTR 0 echo   Tipp: Menue 5 erneut ausfuehren. Steht dort "abgelehnt", Paket per Menue 7 einfrieren.
 if %LBACK% GTR 0 echo   Tipp: Menue 2/3 bzw. 7 erneut ausfuehren - Details: Menue 1.
 call :cleanup
@@ -316,6 +324,20 @@ if defined FOUND (
 )
 exit /b 0
 
+:chksuspended
+if not "!SEEN: %~1 =!"=="!SEEN!" exit /b 0
+set "SEEN=!SEEN!%~1 "
+call :haspkg %~1
+if not defined FOUND exit /b 0
+call :issuspended %~1
+if defined SUSP (
+    set /a LOK+=1
+) else (
+    echo   %~1  [WIEDER AKTIV]  - war stillgelegt; in Menue 7 erneut stilllegen
+    set /a LBACK+=1
+)
+exit /b 0
+
 :appops_off
 cls
 echo APP-OPS zuruecksetzen
@@ -342,8 +364,9 @@ echo   Paketname eingeben, z.B. com.heytap.browser
 echo   ?wort  = installierte Pakete suchen, z.B. ?heytap  (nur ? = alle)
 echo   Enter ohne Eingabe = zurueck zum Menue
 echo   System-Basis und "Nie anfassen"-Liste: nur Freigeben moeglich, kein Einfrieren.
-echo   Laesst das Telefon ein Paket nicht einfrieren, bietet das Skript "entfernen" an.
-echo   Alles hier Eingefrorene oder Entfernte holt Menuepunkt 4 wieder zurueck.
+echo   Laesst das Telefon ein Paket nicht einfrieren, bietet das Skript "entfernen" an,
+echo   und wenn auch das abgelehnt wird, "stilllegen".
+echo   Alles hier Eingefrorene, Entfernte oder Stillgelegte holt Menuepunkt 4 zurueck.
 :single_loop
 echo.
 set "PKG="
@@ -372,6 +395,7 @@ if "%STATE%"=="fehlt" (
     goto :single_loop
 )
 if "%STATE%"=="entfernt" goto :single_removed
+if "%STATE%"=="stillgelegt" goto :single_suspended
 echo     Status: %STATE%
 set "MODE="
 if defined LOCKED (
@@ -422,6 +446,40 @@ call :restorepkg %PKG%
 if %RFAIL% EQU 0 call :unlog entfernt.log %PKG%
 goto :single_loop
 
+:single_suspended
+echo     Status: stillgelegt ^(pausiert, laesst sich nicht oeffnen^)
+set "MODE="
+if defined LOCKED (
+    set /p "MODE=f = freigeben / Enter = nichts: "
+) else (
+    set /p "MODE=f = freigeben / e = doch einfrieren versuchen / Enter = nichts: "
+)
+if /i "%MODE%"=="f" (
+    set /a SFAIL=0
+    call :unneutralize %PKG%
+    if !SFAIL! EQU 0 call :unlog stillgelegt.log %PKG%
+    goto :single_loop
+)
+if defined LOCKED set "MODE="
+if /i not "%MODE%"=="e" (
+    echo Nichts geaendert.
+    goto :single_loop
+)
+call :prep
+adb %DEVARG% shell pm disable-user --user 0 %PKG% >nul 2>nul
+call :isoff %PKG%
+if not defined OFF (
+    echo [x] Einfrieren klappt weiterhin nicht - bleibt stillgelegt.
+    goto :single_loop
+)
+REM Eingefroren ist staerker: die Stilllegung aufheben, damit nichts haengen bleibt
+set /a SFAIL=0
+call :unneutralize %PKG% quiet
+call :unlog stillgelegt.log %PKG%
+echo [=] %PKG%
+echo %PKG%>>"%~dp0eingefroren.log"
+goto :single_loop
+
 :unlog
 REM Entfernt ein Paket aus einem Log, wenn es in Menue 7 bewusst zurueckgeholt wurde -
 REM sonst meldet Menue 8 es faelschlich als "wieder aktiv".
@@ -434,16 +492,25 @@ exit /b 0
 
 :offerremove
 REM Fallback, wenn OnePlus "pm disable-user" ignoriert (Antwort "new state: default").
-REM "pm uninstall -k --user 0" entfernt das Paket nur fuer den Nutzer: Systemkopie und
-REM Daten bleiben, "pm install-existing" holt es zurueck. Derselbe Weg wie bei Canta.
+REM 1. "pm uninstall -k --user 0" entfernt das Paket nur fuer den Nutzer: Systemkopie und
+REM    Daten bleiben, "pm install-existing" holt es zurueck. Derselbe Weg wie bei Canta.
+REM 2. Lehnt das Telefon auch das ab ("only root can delete system app for a particular
+REM    user", neuere OxygenOS), bleibt ohne Root nur Stilllegen (:neutralize).
+REM Nicht moeglich ueber adb: pm disable-until-used, pm hide, einzelne Komponenten
+REM abschalten - Android verweigert das dem Shell-Nutzer grundsaetzlich.
 echo.
-echo     OnePlus laesst dieses Paket nicht einfrieren. Sicherer Ausweg:
-echo     fuer den Nutzer ENTFERNEN - wie Canta, ohne Root.
-echo       - die Systemkopie bleibt auf dem Telefon, App-Daten bleiben erhalten
-echo       - ein Werksreset bringt es ebenfalls zurueck
-echo       - rueckgaengig: Menue 4 oder hier in Menue 7 mit f
+echo     OnePlus laesst dieses Paket nicht einfrieren. Auswege ohne Root:
+echo       u = fuer den Nutzer ENTFERNEN - wie Canta (empfohlen)
+echo           Systemkopie und App-Daten bleiben, ein Werksreset bringt es zurueck
+echo       s = STILLLEGEN - pausieren, beenden, Hintergrund verbieten
+echo           schwaecher als Einfrieren: das System kann die App kurz starten
+echo       rueckgaengig: Menue 4 oder hier in Menue 7 mit f
 set "RM="
-set /p "RM=    u = entfernen / Enter = nichts: "
+set /p "RM=    u = entfernen / s = stilllegen / Enter = nichts: "
+if /i "%RM%"=="s" (
+    call :neutralize %~1
+    exit /b 0
+)
 if /i not "%RM%"=="u" (
     echo     Nichts geaendert.
     exit /b 0
@@ -457,6 +524,72 @@ if "%STATE%"=="entfernt" (
     exit /b 0
 )
 echo [x] Entfernen hat nicht geklappt. Telefon meldet: !RRAW!
+echo.
+echo     Letzter Ausweg ohne Root: STILLLEGEN. Die App laesst sich dann nicht mehr
+echo     oeffnen und darf nicht im Hintergrund laufen; das System kann sie aber kurz
+echo     starten. Staerker: die Android-App dieses Projekts kann sie als
+echo     Geraeteinhaber verstecken ^(siehe android\README.md^).
+set "RM="
+set /p "RM=    s = stilllegen / Enter = nichts: "
+if /i "%RM%"=="s" (
+    call :neutralize %~1
+    exit /b 0
+)
+echo     Nichts geaendert.
+exit /b 0
+
+:neutralize
+REM Stilllegen: pm suspend + Beenden + Hintergrund-Ops auf ignore (nur je Paket, nie je
+REM UID - viele Hersteller-Apps teilen sich die System-UID) + Standby-Stufe restricted.
+REM Erfolg zaehlt nur, wenn dumpsys danach "suspended=true" meldet.
+set "SRAW="
+for /f "delims=" %%r in ('adb %DEVARG% shell pm suspend --user 0 %~1 2^>^&1') do if not defined SRAW set "SRAW=%%r"
+call :issuspended %~1
+if not defined SUSP (
+    echo [x] Stilllegen hat nicht geklappt. Telefon meldet: !SRAW!
+    exit /b 0
+)
+adb %DEVARG% shell am force-stop --user 0 %~1 >nul 2>nul
+adb %DEVARG% shell cmd appops set %~1 RUN_ANY_IN_BACKGROUND ignore >nul 2>nul
+adb %DEVARG% shell cmd appops set %~1 RUN_IN_BACKGROUND ignore >nul 2>nul
+adb %DEVARG% shell am set-standby-bucket --user 0 %~1 restricted >nul 2>nul
+echo [s] %~1 stillgelegt
+echo %~1>>"%~dp0stillgelegt.log"
+exit /b 0
+
+:unneutralize
+REM Hebt :neutralize auf. %2 = quiet: keine Ausgabe (nach erfolgreichem Einfrieren).
+REM Erfolg zaehlt nur, wenn die App danach nicht mehr pausiert ist. Das Log raeumt der Aufrufer
+REM auf (Menue 4 liest stillgelegt.log gerade, waehrend es diese Marke aufruft).
+call :issuspended %~1
+if defined SUSP adb %DEVARG% shell pm unsuspend --user 0 %~1 >nul 2>nul
+adb %DEVARG% shell cmd appops set %~1 RUN_ANY_IN_BACKGROUND default >nul 2>nul
+adb %DEVARG% shell cmd appops set %~1 RUN_IN_BACKGROUND default >nul 2>nul
+adb %DEVARG% shell am set-standby-bucket --user 0 %~1 active >nul 2>nul
+call :issuspended %~1
+if defined SUSP (
+    echo   [x] %~1 laesst sich nicht freigeben
+    set /a SFAIL+=1
+    exit /b 0
+)
+if /i "%~2"=="quiet" exit /b 0
+echo   [+] %~1 freigegeben
+set /a OK+=1
+exit /b 0
+
+:issuspended
+REM Setzt SUSP, wenn das Paket fuer Nutzer 0 pausiert ist. "pm list packages" kennt dafuer
+REM keinen Filter; dumpsys meldet je Nutzer "User 0: ... suspended=true ...".
+REM Erst in eine Datei sammeln: "=" laesst sich in Batch nicht als Suchtext ersetzen. Dann mit
+REM find.exe (nicht findstr: "/c:" mit Leerzeichen ist unzuverlaessig) die Zeile von Nutzer 0
+REM heraussuchen und darin "suspended=true". Voller Pfad, falls ein Unix-find im PATH liegt.
+set "SUSP="
+del "%~dp0opdb_ds.txt" >nul 2>nul
+for /f "delims=" %%r in ('adb %DEVARG% shell dumpsys package %~1') do >>"%~dp0opdb_ds.txt" echo %%r
+if not exist "%~dp0opdb_ds.txt" exit /b 0
+"%SystemRoot%\System32\find.exe" "User 0:" < "%~dp0opdb_ds.txt" | "%SystemRoot%\System32\find.exe" "suspended=true" >nul 2>nul
+if not errorlevel 1 set "SUSP=1"
+del "%~dp0opdb_ds.txt" >nul 2>nul
 exit /b 0
 
 :restorepkg
@@ -492,7 +625,7 @@ echo   (!HITS! Treffer)
 goto :single_loop
 
 :pkgstate
-REM setzt STATE auf fehlt / entfernt / aktiv / eingefroren (direkt am Geraet abgefragt)
+REM setzt STATE auf fehlt / entfernt / aktiv / eingefroren / stillgelegt (direkt am Geraet abgefragt)
 set "STATE=fehlt"
 for /f "delims=" %%r in ('adb %DEVARG% shell pm list packages %~1') do (
     if /i "%%r"=="package:%~1" set "STATE=aktiv"
@@ -506,6 +639,9 @@ exit /b 0
 :pkgstate_on
 call :isoff %~1
 if defined OFF set "STATE=eingefroren"
+if defined OFF exit /b 0
+call :issuspended %~1
+if defined SUSP set "STATE=stillgelegt"
 exit /b 0
 
 :askmode
@@ -607,6 +743,15 @@ set "FOUND="
 for /f "usebackq delims=" %%r in ("%~dp0opdb_pd.txt") do if /i "%%r"=="package:%~1" set "FOUND=1"
 if defined FOUND (
     echo   %~1  [gesperrt/aus]
+    exit /b 0
+)
+REM Stilllegen sieht man nur per dumpsys - deshalb nur fuer Pakete aus stillgelegt.log nachfragen
+set "SUSP="
+set "INLOG="
+if exist "%~dp0stillgelegt.log" for /f "usebackq delims=" %%r in ("%~dp0stillgelegt.log") do if /i "%%r"=="%~1" set "INLOG=1"
+if defined INLOG call :issuspended %~1
+if defined SUSP (
+    echo   %~1  [stillgelegt]
 ) else (
     echo   %~1  [aktiv]
 )
@@ -631,7 +776,7 @@ if defined OFF (
     echo %~1>>"%~dp0eingefroren.log"
     set /a OK+=1
 ) else (
-    echo   [X] %~1   laesst sich nicht einfrieren - Menue 7 bietet "entfernen" an
+    echo   [X] %~1   laesst sich nicht einfrieren - Menue 7 bietet "entfernen" / "stilllegen" an
     set /a FAIL+=1
 )
 exit /b 0
@@ -706,7 +851,7 @@ echo Abgebrochen.
 exit /b 0
 
 :cleanup
-del "%~dp0opdb_pk.txt" "%~dp0opdb_pd.txt" "%~dp0opdb_pu.txt" >nul 2>nul
+del "%~dp0opdb_pk.txt" "%~dp0opdb_pd.txt" "%~dp0opdb_pu.txt" "%~dp0opdb_ds.txt" >nul 2>nul
 exit /b 0
 
 :done

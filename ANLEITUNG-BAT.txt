@@ -46,6 +46,10 @@ Falls SmartScreen warnt: „Weitere Informationen“ → „Trotzdem ausführen�
   Lässt das Telefon ein Paket nicht einfrieren (z. B. den Browser `com.heytap.browser`, Antwort
   „new state: default“), bietet [7] `u` = **für den Nutzer entfernen** an. Systemkopie und App-Daten bleiben
   erhalten; zurück mit [4] oder [7] → Paketname → `f`.
+  Lehnt das Telefon auch das Entfernen ab („only root can delete system app for a particular user“), bietet [7]
+  `s` = **stilllegen** an: pausieren (`pm suspend`), beenden, Hintergrund verbieten, Standby-Stufe „restricted“.
+  Die App lässt sich dann nicht mehr öffnen; schwächer als Einfrieren, weil das System sie kurz starten kann.
+  Zurück mit [4] oder [7] → Paketname → `f`. [1] zeigt sie als `[stillgelegt]`, [8] meldet `[WIEDER AKTIV]`.
 
 ## Was das Skript technisch macht
 - `pm disable-user --user 0 <paket>` = Paket **einfrieren**, nicht deinstallieren.
@@ -55,7 +59,8 @@ Falls SmartScreen warnt: „Weitere Informationen“ → „Trotzdem ausführen�
 - Beim Start wird geprüft, ob genau **ein** Gerät hängt; bei „unauthorized“ gibt es einen eigenen Hinweis.
 - Der `com.android.shell`-Trick (kurz deaktivieren, sofort wieder aktivieren) läuft **nur dann**, wenn ein
   Einfrieren fehlschlägt – OnePlus verweigert sonst das Deaktivieren („not allowed to disable“).
-- Jedes Einfrieren landet in `eingefroren.log`, jedes Entfernen in `entfernt.log`; Reset arbeitet beide ab.
+- Jedes Einfrieren landet in `eingefroren.log`, jedes Entfernen in `entfernt.log`, jedes Stilllegen in
+  `stillgelegt.log`; Reset arbeitet alle drei ab.
 - Entfernen = `pm uninstall -k --user 0 <paket>` (wie Canta), zurück mit `pm install-existing --user 0 <paket>`.
   Wird nur angeboten, wenn Einfrieren nicht klappt, und nur nach `u`.
 - Ein Werksreset holt ohnehin alles zurück.
