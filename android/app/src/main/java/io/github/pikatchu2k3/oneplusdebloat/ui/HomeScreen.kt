@@ -101,7 +101,7 @@ fun HomeScreen(
                 Button(onClick = vm::reapplyDrift, enabled = ui.ready) { Text(t.driftApply) }
                 if (!ui.ready) Text(t.needsShellShort, style = MaterialTheme.typography.bodySmall)
             }
-        } else if (ui.loaded && (ui.journalFrozen.isNotEmpty() || ui.journalRemoved.isNotEmpty())) {
+        } else if (ui.loaded && ui.journalCount > 0) {
             InfoCard(
                 icon = Icons.Filled.CheckCircle,
                 title = t.allGoodTitle,
@@ -123,7 +123,7 @@ fun HomeScreen(
             Text(t.resetBody)
             OutlinedButton(
                 onClick = { confirmReset = true },
-                enabled = ui.journalFrozen.isNotEmpty() || ui.journalRemoved.isNotEmpty(),
+                enabled = ui.journalCount > 0,
             ) { Text(t.resetButton) }
         }
 
@@ -156,7 +156,9 @@ fun HomeScreen(
         AlertDialog(
             onDismissRequest = { confirmReset = false },
             title = { Text(t.resetTitle) },
-            text = { Text(t.resetConfirmBody(ui.journalFrozen.size, ui.journalRemoved.size)) },
+            text = { Text(t.resetConfirmBody(
+                    (ui.journalFrozen + ui.journalNeutralized).size, (ui.journalRemoved + ui.journalHidden).size,
+                )) },
             confirmButton = {
                 TextButton(onClick = { confirmReset = false; vm.resetAll() }) { Text(t.resetButton) }
             },

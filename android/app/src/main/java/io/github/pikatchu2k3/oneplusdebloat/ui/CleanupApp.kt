@@ -50,8 +50,9 @@ fun CleanupApp(vm: MainViewModel) {
     var listTab by rememberSaveable { mutableIntStateOf(0) }
     var detail by rememberSaveable { mutableStateOf<String?>(null) }
     var confirmRemove by remember { mutableStateOf<List<String>?>(null) }
-    // A replaceable core app (dialer, keyboard ...) and whether it is to be removed instead of frozen.
-    var caution by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
+    var confirmHard by remember { mutableStateOf<List<String>?>(null) }
+    // A replaceable core app (dialer, keyboard ...) and what is to be done with it after the warning.
+    var caution by remember { mutableStateOf<Pair<String, CautionAction>?>(null) }
     val snackbar = remember { SnackbarHostState() }
 
     // Coming back from Shizuku or the system settings: states may have changed.
@@ -114,8 +115,8 @@ fun CleanupApp(vm: MainViewModel) {
             report = report,
             ui = ui,
             onDismiss = vm::dismissReport,
-            onRemoveIgnored = {
-                confirmRemove = report.ignored.map { it.pkg }
+            onOtherWays = {
+                confirmHard = report.stubborn
                 vm.dismissReport()
             },
         )
@@ -129,18 +130,27 @@ fun CleanupApp(vm: MainViewModel) {
         )
     }
 
+    confirmHard?.let { pkgs ->
+        OtherWaysDialog(
+            pkgs = pkgs, ui = ui,
+            onConfirm = { confirmHard = null; vm.switchOffHard(pkgs) },
+            onDismiss = { confirmHard = null },
+        )
+    }
+
     detail?.let { pkg ->
         val row = ui.rows[pkg]
         if (row == null) detail = null
         else DetailSheet(
             row = row, ui = ui, vm = vm,
             onDismiss = { detail = null },
-            onFreeze = { if (row.isCaution) caution = pkg to false else vm.freeze(listOf(pkg)) },
-            onRemove = { if (row.isCaution) caution = pkg to true else confirmRemove = listOf(pkg) },
+            onFreeze = { if (row.isCaution) caution = pkg to CautionAction.FREEZE else vm.freeze(listOf(pkg)) },
+            onRemove = { if (row.isCaution) caution = pkg to CautionAction.REMOVE else confirmRemove = listOf(pkg) },
+            onOtherWays = { if (row.isCaution) caution = pkg to CautionAction.OTHER_WAYS else confirmHard = listOf(pkg) },
         )
     }
 
-    caution?.let { (pkg, removing) ->
+    caution?.let { (pkg, action) ->
         AlertDialog(
             onDismissRequest = { caution = null },
             title = { Text(t.cautionTitle) },
@@ -155,13 +165,19 @@ fun CleanupApp(vm: MainViewModel) {
             confirmButton = {
                 TextButton(onClick = {
                     caution = null
-                    if (removing) confirmRemove = listOf(pkg) else vm.freeze(listOf(pkg))
+                    when (action) {
+                        CautionAction.FREEZE -> vm.freeze(listOf(pkg))
+                        CautionAction.REMOVE -> confirmRemove = listOf(pkg)
+                        CautionAction.OTHER_WAYS -> confirmHard = listOf(pkg)
+                    }
                 }) { Text(t.cautionConfirm) }
             },
             dismissButton = { TextButton(onClick = { caution = null }) { Text(t.cancel) } },
         )
     }
 }
+
+private enum class CautionAction { FREEZE, REMOVE, OTHER_WAYS }
 
 @Composable
 private fun ProgressDialog(progress: Progress) {
@@ -185,9 +201,10 @@ private fun ProgressDialog(progress: Progress) {
 }
 
 @Composable
-private fun ReportDialog(report: Report, ui: UiState, onDismiss: () -> Unit, onRemoveIgnored: () -> Unit) {
+internal fun ReportDialog(report: Report, ui: UiState, onDismiss: () -> Unit, onOtherWays: () -> Unit) {
     val t = LocalTxt.current
     val ignored = report.ignored
+    val stubborn = report.stubborn
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(t.reportTitle) },
@@ -201,6 +218,24 @@ private fun ReportDialog(report: Report, ui: UiState, onDismiss: () -> Unit, onR
                     Text(t.reportIgnoredTitle(ignored.size), fontWeight = FontWeight.SemiBold)
                     Text(t.reportIgnoredBody, style = MaterialTheme.typography.bodyMedium)
                     for (r in ignored) FailureLine(ui.rows[r.pkg]?.label ?: r.pkg, r.pkg, r.phoneSays)
+                }
+                val chains = report.chains
+                if (chains.isNotEmpty()) {
+                    Text(t.reportChainsTitle, fontWeight = FontWeight.SemiBold)
+                    for (r in chains) {
+                        Column {
+                            Text(ui.rows[r.pkg]?.label ?: r.pkg, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                            PackageName(r.pkg)
+                            for (a in r.attempts) Text(t.attemptLine(a), style = MaterialTheme.typography.bodySmall)
+                            Text(t.outcome(r.outcome), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                    val ownerWouldHelp = !ui.owner.isOwner &&
+                        chains.any { it.outcome == Outcome.NEUTRALIZED || it.outcome == Outcome.NOTHING_WORKED }
+                    if (ownerWouldHelp) Text(t.reportOwnerTip, style = MaterialTheme.typography.bodyMedium)
+                    if (chains.any { it.outcome == Outcome.NEUTRALIZED }) {
+                        Text(t.reportNeutralizedNote, style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
                 if (report.failed.isNotEmpty()) {
                     Text(t.reportFailedTitle(report.failed.size), fontWeight = FontWeight.SemiBold)
@@ -217,11 +252,11 @@ private fun ReportDialog(report: Report, ui: UiState, onDismiss: () -> Unit, onR
             }
         },
         confirmButton = {
-            if (ignored.isNotEmpty()) TextButton(onClick = onRemoveIgnored) { Text(t.removeInstead(ignored.size)) }
+            if (stubborn.isNotEmpty()) TextButton(onClick = onOtherWays) { Text(t.tryOtherWays(stubborn.size)) }
             else TextButton(onClick = onDismiss) { Text(t.ok) }
         },
         dismissButton = {
-            if (ignored.isNotEmpty()) TextButton(onClick = onDismiss) { Text(t.notNow) }
+            if (stubborn.isNotEmpty()) TextButton(onClick = onDismiss) { Text(t.notNow) }
         },
     )
 }
@@ -259,6 +294,34 @@ fun RemoveConfirmDialog(pkgs: List<String>, ui: UiState, onConfirm: () -> Unit, 
             }
         },
         confirmButton = { TextButton(onClick = onConfirm) { Text(t.removeConfirm) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(t.cancel) } },
+    )
+}
+
+/** Confirms the "other ways" and says up front which steps will run on this phone. */
+@Composable
+fun OtherWaysDialog(pkgs: List<String>, ui: UiState, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    val t = LocalTxt.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(t.otherWaysTitle(pkgs.size)) },
+        text = {
+            Column(
+                modifier = Modifier.heightIn(max = 460.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(t.otherWaysBody)
+                for (step in t.otherWaysSteps(ui.owner.isOwner)) Text(step, style = MaterialTheme.typography.bodyMedium)
+                Text(t.otherWaysUndo, style = MaterialTheme.typography.bodySmall)
+                for (pkg in pkgs) {
+                    Column {
+                        Text(ui.rows[pkg]?.label ?: pkg, fontWeight = FontWeight.Medium)
+                        PackageName(pkg)
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(t.otherWaysConfirm) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(t.cancel) } },
     )
 }

@@ -15,17 +15,26 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureScreenRoboImage
+import io.github.pikatchu2k3.oneplusdebloat.core.ActionResult
+import io.github.pikatchu2k3.oneplusdebloat.core.Attempt
 import io.github.pikatchu2k3.oneplusdebloat.core.Drift
 import io.github.pikatchu2k3.oneplusdebloat.core.DriftEntry
 import io.github.pikatchu2k3.oneplusdebloat.core.OpState
 import io.github.pikatchu2k3.oneplusdebloat.core.OpStatus
+import io.github.pikatchu2k3.oneplusdebloat.core.Outcome
+import io.github.pikatchu2k3.oneplusdebloat.core.PkgState
+import io.github.pikatchu2k3.oneplusdebloat.core.Way
 import io.github.pikatchu2k3.oneplusdebloat.shizuku.ShizukuState
 import io.github.pikatchu2k3.oneplusdebloat.ui.AppsScreen
+import io.github.pikatchu2k3.oneplusdebloat.ui.BatchKind
 import io.github.pikatchu2k3.oneplusdebloat.ui.CleanupTheme
 import io.github.pikatchu2k3.oneplusdebloat.ui.DetailSheet
 import io.github.pikatchu2k3.oneplusdebloat.ui.HelpScreen
 import io.github.pikatchu2k3.oneplusdebloat.ui.HomeScreen
 import io.github.pikatchu2k3.oneplusdebloat.ui.MainViewModel
+import io.github.pikatchu2k3.oneplusdebloat.ui.OtherWaysDialog
+import io.github.pikatchu2k3.oneplusdebloat.ui.Report
+import io.github.pikatchu2k3.oneplusdebloat.ui.ReportDialog
 import io.github.pikatchu2k3.oneplusdebloat.ui.TelemetryScreen
 import io.github.pikatchu2k3.oneplusdebloat.ui.UiState
 import org.junit.Before
@@ -150,7 +159,7 @@ class ScreenshotTest {
     fun detail_caution_dialer() = shot("12_detail_caution") {
         val ui = ready()
         AppsScreen(ui, vm, 3, {}, {})
-        DetailSheet(ui.rows.getValue("com.google.android.dialer"), ui, vm, {}, {}, {})
+        DetailSheet(ui.rows.getValue("com.google.android.dialer"), ui, vm, {}, {}, {}, {})
     }
 
     @Test
@@ -162,14 +171,14 @@ class ScreenshotTest {
     fun detail_sheet() = shot("07_detail_browser") {
         val ui = ready()
         AppsScreen(ui, vm, 0, {}, {})
-        DetailSheet(ui.rows.getValue("com.heytap.browser"), ui, vm, {}, {}, {})
+        DetailSheet(ui.rows.getValue("com.heytap.browser"), ui, vm, {}, {}, {}, {})
     }
 
     @Test
     fun detail_sheet_view_only() = shot("08_detail_view_only") {
         val ui = vm.ui.value
         AppsScreen(ui, vm, 1, {}, {})
-        DetailSheet(ui.rows.getValue("com.oplus.encryption"), ui, vm, {}, {}, {})
+        DetailSheet(ui.rows.getValue("com.oplus.encryption"), ui, vm, {}, {}, {}, {})
     }
 
     @Test
@@ -191,5 +200,65 @@ class ScreenshotTest {
     @Test
     fun help() = shot("10_help") {
         HelpScreen(vm.ui.value, vm)
+    }
+
+    // ---- apps the vendor will not let go
+
+    private val browser = "com.heytap.browser"
+
+    private fun neutralizedBrowser(): UiState {
+        val ui = ready()
+        val row = ui.rows.getValue(browser).copy(state = PkgState.SUSPENDED)
+        return ui.copy(rows = ui.rows + (browser to row), journalNeutralized = setOf(browser))
+    }
+
+    @Test
+    fun other_ways_dialog() = shot("13_other_ways_dialog") {
+        val ui = ready()
+        AppsScreen(ui, vm, 0, {}, {})
+        OtherWaysDialog(listOf(browser), ui, {}, {})
+    }
+
+    @Test
+    fun other_ways_report() = shot("14_other_ways_report") {
+        val ui = ready()
+        AppsScreen(ui, vm, 0, {}, {})
+        val report = Report(
+            BatchKind.HARD,
+            listOf(
+                ActionResult(
+                    browser, Outcome.NEUTRALIZED,
+                    attempts = listOf(
+                        Attempt(Way.REMOVE, false, phoneSays = "Failure [DELETE_FAILED_INTERNAL_ERROR]"),
+                        Attempt(Way.HIDE, false, skipped = true),
+                        Attempt(Way.NEUTRALIZE, true),
+                    ),
+                ),
+            ),
+        )
+        ReportDialog(report, ui, {}, {})
+    }
+
+    @Test
+    fun freeze_ignored_report_english() = shot("15_freeze_ignored_report_en", german = false) {
+        val ui = ready()
+        AppsScreen(ui, vm, 0, {}, {})
+        ReportDialog(
+            Report(BatchKind.FREEZE, listOf(ActionResult(browser, Outcome.FREEZE_IGNORED, "Package $browser new state: default"))),
+            ui, {}, {},
+        )
+    }
+
+    @Test
+    fun detail_suspended() = shot("16_detail_suspended") {
+        val ui = neutralizedBrowser()
+        AppsScreen(ui, vm, 4, {}, {})
+        DetailSheet(ui.rows.getValue(browser), ui, vm, {}, {}, {}, {})
+    }
+
+    @Test
+    @Config(qualifiers = "w411dp-h2600dp-420dpi")
+    fun help_device_owner() = shot("17_help_device_owner") {
+        HelpScreen(ready(), vm)
     }
 }

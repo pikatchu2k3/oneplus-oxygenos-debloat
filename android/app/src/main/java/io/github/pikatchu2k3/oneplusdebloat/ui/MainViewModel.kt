@@ -17,9 +17,11 @@ import io.github.pikatchu2k3.oneplusdebloat.core.OpOutcome
 import io.github.pikatchu2k3.oneplusdebloat.core.OpResult
 import io.github.pikatchu2k3.oneplusdebloat.core.OpStatus
 import io.github.pikatchu2k3.oneplusdebloat.core.Outcome
+import io.github.pikatchu2k3.oneplusdebloat.core.OwnerSetup
 import io.github.pikatchu2k3.oneplusdebloat.core.PkgState
 import io.github.pikatchu2k3.oneplusdebloat.core.ShellUnavailableException
 import io.github.pikatchu2k3.oneplusdebloat.core.isValidPackageName
+import io.github.pikatchu2k3.oneplusdebloat.data.AndroidDeviceOwner
 import io.github.pikatchu2k3.oneplusdebloat.data.AndroidPackageSource
 import io.github.pikatchu2k3.oneplusdebloat.data.AppStore
 import io.github.pikatchu2k3.oneplusdebloat.data.DefaultRole
@@ -58,7 +60,7 @@ data class AppRow(
 /** An installed app offered in the "add to my list" picker. */
 data class PickerApp(val pkg: String, val label: String, val isSystem: Boolean, val state: PkgState)
 
-enum class BatchKind { FREEZE, REMOVE, RESET, REAPPLY }
+enum class BatchKind { FREEZE, REMOVE, RESET, REAPPLY, HARD }
 
 data class Progress(val kind: BatchKind, val done: Int, val total: Int, val current: String)
 
@@ -67,8 +69,26 @@ data class Report(val kind: BatchKind, val results: List<ActionResult>) {
     fun count(vararg outcomes: Outcome) = results.count { it.outcome in outcomes }
     val ignored: List<ActionResult> get() = results.filter { it.outcome == Outcome.FREEZE_IGNORED }
     val failed: List<ActionResult>
-        get() = results.filter { it.isFailure && it.outcome != Outcome.FREEZE_IGNORED }
+        get() = results.filter { it.isFailure && it.outcome != Outcome.FREEZE_IGNORED && it.attempts.isEmpty() }
+
+    /** Packages the vendor will not let go the normal way: candidates for the "other ways". */
+    val stubborn: List<String>
+        get() = if (kind == BatchKind.HARD) emptyList()
+        else results.filter { it.outcome == Outcome.FREEZE_IGNORED || it.outcome == Outcome.REMOVE_FAILED }.map { it.pkg }
+
+    /** Results of the "other ways", step by step. */
+    val chains: List<ActionResult> get() = results.filter { it.attempts.isNotEmpty() }
 }
+
+/** Where the device owner set-up stands, and the phone's last answer. */
+data class OwnerUi(
+    val isOwner: Boolean = false,
+    val busy: Boolean = false,
+    val lastResult: OwnerSetup.Result? = null,
+    val phoneSays: String = "",
+    /** Giving up device owner did not work (it stays set). */
+    val releaseFailed: Boolean = false,
+)
 
 data class OpsReport(val blocking: Boolean, val results: List<OpResult>) {
     fun count(outcome: OpOutcome) = results.count { it.outcome == outcome }
@@ -82,6 +102,9 @@ data class UiState(
     val custom: List<String> = emptyList(),
     val journalFrozen: Set<String> = emptySet(),
     val journalRemoved: Set<String> = emptySet(),
+    val journalHidden: Set<String> = emptySet(),
+    val journalNeutralized: Set<String> = emptySet(),
+    val owner: OwnerUi = OwnerUi(),
     /** Everything disabled / removed for the user on this phone, whoever did it. */
     val deviceFrozen: List<String> = emptyList(),
     val deviceRemoved: List<String> = emptyList(),
@@ -99,6 +122,10 @@ data class UiState(
     val loaded: Boolean = false,
 ) {
     val ready: Boolean get() = shizuku == ShizukuState.READY
+
+    /** Everything this app switched off and "Reset everything" would undo. */
+    val journalCount: Int
+        get() = (journalFrozen + journalRemoved + journalHidden + journalNeutralized).size
     fun rowsOf(pkgs: List<String>): List<AppRow> = pkgs.mapNotNull { rows[it] }
 }
 
@@ -109,10 +136,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val packages = AndroidPackageSource(app)
     private val store = AppStore(app)
     private val shizuku = ShizukuBackend(app)
+    private val owner = AndroidDeviceOwner(app)
     private val userId = android.os.Process.myUid() / 100_000
     private val engine = DebloatEngine(
         shizuku, packages, store, catalog.protectedPackages, userId,
         isDefaultApp = { packages.defaultRoleOf(it) != null },
+        owner = owner,
     )
     private val icons = ConcurrentHashMap<String, Bitmap>()
 
@@ -124,6 +153,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** The "caution" tab: replaceable core apps first, then the locked system parts. */
     val cautionIds = catalog.ofKind(ListKind.NEVER).sortedBy { it.locked }.map { it.id } + catalog.critical
     val userIdForCommands: Int get() = userId
+    /** For `dpm set-device-owner` from a PC. */
+    val ownerCommand: String get() = "adb shell " + OwnerSetup.command(userId, owner.component)
 
     init {
         viewModelScope.launch {
@@ -151,9 +182,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     custom = store.custom.sorted(),
                     journalFrozen = store.frozen,
                     journalRemoved = store.removed,
-                    deviceFrozen = snapshot.values.filter { r -> r.state == PkgState.FROZEN }
+                    journalHidden = store.hidden,
+                    journalNeutralized = store.neutralized,
+                    owner = it.owner.copy(isOwner = owner.isOwner),
+                    deviceFrozen = snapshot.values.filter { r -> r.state == PkgState.FROZEN || r.state == PkgState.SUSPENDED }
                         .sortedBy { r -> r.label.lowercase() }.map { r -> r.pkg },
-                    deviceRemoved = snapshot.values.filter { r -> r.state == PkgState.REMOVED }
+                    deviceRemoved = snapshot.values.filter { r -> r.state == PkgState.REMOVED || r.state == PkgState.HIDDEN }
                         .sortedBy { r -> r.label.lowercase() }.map { r -> r.pkg },
                     drift = engine.drift(),
                     log = store.log,
@@ -172,13 +206,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         ids += store.custom
         ids += store.frozen
         ids += store.removed
+        ids += store.hidden
+        ids += store.neutralized
         // Also everything that is already disabled or removed on this phone - by the PC script,
         // Canta, the user or the factory - so the counters and the "Off" tab show the real picture.
         val own = getApplication<Application>().packageName
         for (info in packages.allApps()) {
             val pkg = info.packageName
             if (pkg == own || pkg in ids || !isValidPackageName(pkg)) continue
-            if (info.flags and ApplicationInfo.FLAG_INSTALLED == 0 || !info.enabled) ids += pkg
+            if (packages.stateOf(info) != PkgState.ACTIVE) ids += pkg
         }
         return ids.associateWith { pkg ->
             val info = packages.infoOf(pkg)
@@ -241,25 +277,71 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun freeze(pkgs: Collection<String>) = batch(BatchKind.FREEZE, pkgs.toList()) { engine.freeze(it) }
     fun remove(pkgs: Collection<String>) = batch(BatchKind.REMOVE, pkgs.toList()) { engine.remove(it) }
-    fun thaw(pkg: String) = batch(BatchKind.RESET, listOf(pkg), silent = true) { engine.thaw(it) }
-    fun restore(pkg: String) = batch(BatchKind.RESET, listOf(pkg), silent = true) { engine.restore(it) }
+    /** The "other ways": remove, hide as device owner, neutralize - stops at the first that works. */
+    fun switchOffHard(pkgs: Collection<String>) = batch(BatchKind.HARD, pkgs.toList()) { engine.switchOffHard(it) }
 
-    fun resetAll() {
-        val all = (store.removed + store.frozen).toList()
-        batch(BatchKind.RESET, all) { pkg ->
-            if (pkg in store.removed) engine.restore(pkg).also { if (it.outcome == Outcome.NOT_PRESENT) store.unmarkRemoved(pkg) }
-            else engine.thaw(pkg).also { if (it.outcome == Outcome.NOT_PRESENT) store.unmarkFrozen(pkg) }
+    /** Release, bring back or unhide - whichever way the package was switched off. */
+    fun undo(pkg: String) = batch(BatchKind.RESET, listOf(pkg), silent = true) { engine.undo(it) }
+
+    fun resetAll() = batch(BatchKind.RESET, engine.journalAll) { engine.undo(it) }
+
+    /** Switches off again, the same way as before, whatever an update brought back. */
+    fun reapplyDrift() = batch(BatchKind.REAPPLY, _ui.value.drift.map { it.pkg }) { engine.reapply(it) }
+
+    // ---- device owner (optional, for the "other ways")
+
+    /** `dpm set-device-owner` through Shizuku; success only counts if Android then says we are owner. */
+    fun setupOwner() {
+        if (!shizuku.isReady) {
+            notify(Message.NEEDS_SHELL)
+            return
+        }
+        if (_ui.value.owner.busy) return
+        viewModelScope.launch {
+            _ui.update { it.copy(owner = it.owner.copy(busy = true, releaseFailed = false)) }
+            val raw = try {
+                withContext(Dispatchers.IO) { shizuku.exec(OwnerSetup.command(userId, owner.component)).output.trim() }
+            } catch (_: ShellUnavailableException) {
+                notify(Message.CONNECTION_LOST)
+                null
+            }
+            val isOwner = owner.isOwner
+            val result = when {
+                raw == null -> null
+                isOwner -> OwnerSetup.Result.OK
+                else -> OwnerSetup.classify(raw).let { if (it == OwnerSetup.Result.OK) OwnerSetup.Result.OTHER else it }
+            }
+            if (raw != null) store.appendLog("${now()}  DEVICE_OWNER ${result ?: ""}  (${raw.lineSequence().firstOrNull().orEmpty()})")
+            _ui.update {
+                it.copy(owner = OwnerUi(isOwner = isOwner, lastResult = result, phoneSays = raw.orEmpty()), log = store.log)
+            }
         }
     }
 
-    /** Freezes or removes again whatever an update brought back. */
-    fun reapplyDrift() {
-        val removedAgain = store.removed
-        batch(BatchKind.REAPPLY, _ui.value.drift.map { it.pkg }) { pkg ->
-            if (pkg in removedAgain) engine.remove(pkg) else {
-                // The journal still lists it as frozen; freeze() handles the "active again" case.
-                engine.freeze(pkg)
+    /** Shows every app hidden by us first, then gives up device owner. Needs no Shizuku. */
+    fun releaseOwner() {
+        if (_ui.value.owner.busy) return
+        viewModelScope.launch {
+            _ui.update { it.copy(owner = it.owner.copy(busy = true)) }
+            val results = withContext(Dispatchers.IO) {
+                store.hidden.toList().map { pkg ->
+                    try {
+                        engine.undo(pkg)
+                    } catch (_: ShellUnavailableException) {
+                        ActionResult(pkg, Outcome.RESTORE_FAILED)
+                    }
+                }
             }
+            results.filter { it.changedSomething || it.isFailure }.forEach(::log)
+            // Never give up device owner while an app is still hidden - nobody could bring it back.
+            val released = store.hidden.isEmpty() && withContext(Dispatchers.IO) { owner.release() }
+            _ui.update {
+                it.copy(
+                    owner = OwnerUi(isOwner = owner.isOwner, releaseFailed = !released),
+                    report = if (results.isEmpty()) it.report else Report(BatchKind.RESET, results),
+                )
+            }
+            refresh()
         }
     }
 
@@ -302,10 +384,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private fun now(): String = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(Date())
+
     private fun log(r: ActionResult) {
-        val time = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(Date())
         val extra = if (r.phoneSays.isNotEmpty()) "  (${r.phoneSays})" else ""
-        store.appendLog("$time  ${r.outcome}  ${r.pkg}$extra")
+        val steps = if (r.attempts.isEmpty()) "" else "  [" + r.attempts.joinToString(" ") {
+            "${it.way}:" + when {
+                it.ok -> "ok"
+                it.skipped -> "skip"
+                else -> "no"
+            }
+        } + "]"
+        store.appendLog("${now()}  ${r.outcome}  ${r.pkg}$steps$extra")
     }
 
     fun clearLog() {

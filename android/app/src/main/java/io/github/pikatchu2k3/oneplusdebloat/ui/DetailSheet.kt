@@ -44,6 +44,7 @@ fun DetailSheet(
     onDismiss: () -> Unit,
     onFreeze: () -> Unit,
     onRemove: () -> Unit,
+    onOtherWays: () -> Unit,
 ) {
     val t = LocalTxt.current
     val context = LocalContext.current
@@ -96,7 +97,8 @@ fun DetailSheet(
             Text(t.stateExplanation(row.state), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             // ---- actions
-            if (row.state == PkgState.ACTIVE || row.state == PkgState.FROZEN) {
+            val installed = row.state == PkgState.ACTIVE || row.state == PkgState.FROZEN || row.state == PkgState.SUSPENDED
+            if (installed) {
                 val hint = when {
                     row.isProtected -> t.protectedHint
                     row.defaultRole != null -> t.defaultHint(row.defaultRole)
@@ -112,17 +114,26 @@ fun DetailSheet(
                     PkgState.ACTIVE -> if (canSwitchOff) {
                         Button(onClick = { onDismiss(); onFreeze() }, enabled = ui.ready) { Text(t.freeze) }
                         OutlinedButton(onClick = { onDismiss(); onRemove() }, enabled = ui.ready) { Text(t.remove) }
+                        OutlinedButton(onClick = { onDismiss(); onOtherWays() }, enabled = ui.ready) { Text(t.otherWays) }
                     }
                     PkgState.FROZEN -> {
-                        Button(onClick = { vm.thaw(row.pkg); onDismiss() }, enabled = ui.ready) { Text(t.thaw) }
+                        Button(onClick = { vm.undo(row.pkg); onDismiss() }, enabled = ui.ready) { Text(t.thaw) }
                         if (canSwitchOff) {
                             OutlinedButton(onClick = { onDismiss(); onRemove() }, enabled = ui.ready) { Text(t.remove) }
                         }
                     }
-                    PkgState.REMOVED -> Button(onClick = { vm.restore(row.pkg); onDismiss() }, enabled = ui.ready) { Text(t.restore) }
+                    PkgState.SUSPENDED -> {
+                        Button(onClick = { vm.undo(row.pkg); onDismiss() }, enabled = ui.ready) { Text(t.thaw) }
+                        if (canSwitchOff) {
+                            // Worth another try later, e.g. once device owner is set up.
+                            OutlinedButton(onClick = { onDismiss(); onOtherWays() }, enabled = ui.ready) { Text(t.otherWays) }
+                        }
+                    }
+                    PkgState.REMOVED, PkgState.HIDDEN ->
+                        Button(onClick = { vm.undo(row.pkg); onDismiss() }, enabled = ui.ready) { Text(t.restore) }
                     PkgState.NOT_PRESENT -> Unit
                 }
-                if (row.state == PkgState.ACTIVE || row.state == PkgState.FROZEN) {
+                if (installed) {
                     FilledTonalButton(onClick = { openAppSettings(context, row.pkg) }) { Text(t.systemSettings) }
                 }
                 if (inCustom) TextButton(onClick = { vm.removeCustom(row.pkg); onDismiss() }) { Text(t.removeFromList) }
@@ -137,7 +148,9 @@ fun DetailSheet(
                     PkgState.ACTIVE -> if (!canSwitchOff) null else "adb shell pm disable-user --user $user ${row.pkg}"
                     PkgState.FROZEN -> "adb shell pm enable --user $user ${row.pkg}"
                     PkgState.REMOVED -> "adb shell pm install-existing --user $user ${row.pkg}"
-                    PkgState.NOT_PRESENT -> null
+                    PkgState.SUSPENDED -> "adb shell pm unsuspend --user $user ${row.pkg}"
+                    // Only the device owner (this app) or root can unhide.
+                    PkgState.HIDDEN, PkgState.NOT_PRESENT -> null
                 }
                 Column(
                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
