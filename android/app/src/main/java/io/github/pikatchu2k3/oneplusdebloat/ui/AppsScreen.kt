@@ -121,17 +121,21 @@ fun AppsScreen(
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(t.listIntro(listTab), style = MaterialTheme.typography.bodyMedium)
                     if (listTab == 2) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // Wraps on narrow screens or large font sizes instead of squeezing "Export" into a column.
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
                             Button(onClick = vm::loadPicker) {
                                 Icon(Icons.Filled.Add, null)
                                 Spacer(Modifier.width(6.dp))
                                 Text(t.addApps)
                             }
-                            TextButton(onClick = { importLauncher.launch(arrayOf("*/*")) }) { Text(t.importList) }
+                            TextButton(onClick = { importLauncher.launch(arrayOf("*/*")) }) { Text(t.importList, maxLines = 1) }
                             TextButton(
                                 onClick = { exportLauncher.launch("oneplus-cleanup-liste.json") },
                                 enabled = ui.custom.isNotEmpty(),
-                            ) { Text(t.exportList) }
+                            ) { Text(t.exportList, maxLines = 1) }
                         }
                     }
                     if (all.size > 6) {

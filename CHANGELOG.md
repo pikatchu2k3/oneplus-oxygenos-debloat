@@ -33,6 +33,22 @@
   Deliberately not used: `pm disable-until-used`, `pm hide` and disabling single components – AOSP refuses all
   three to the shell user, so they cannot work through Shizuku/adb. **Not tested on a device.**
 
+## v0.9.8-beta — pre-release
+
+- **Menu 7: suspend when removing is refused too.** Newer OxygenOS answers `pm uninstall -k --user 0` for some
+  system apps with `Failure [only root can delete system app for a particular user]` (confirmed on a device with
+  `com.oplus.gleanerservice`). Menu 7 now offers `s` = suspend after a failed removal, or directly instead of
+  removing: `pm suspend`, `am force-stop`, `RUN_ANY_IN_BACKGROUND`/`RUN_IN_BACKGROUND` = ignore (per package, never
+  per uid), standby bucket `restricted`. Success is read back from `dumpsys package` (`User 0: … suspended=true`).
+- Suspended packages are logged in `stillgelegt.log`. Menu 4 undoes them (`pm unsuspend`, app-ops `default`,
+  bucket `active`; the log is kept if one fails), menu 7 shows "stillgelegt" with `f` = release or `e` = try
+  freezing again, menu 1 shows `[stillgelegt]`, menu 8 reports `[WIEDER AKTIV]`.
+- Not offered on purpose: `pm disable-until-used`, `pm hide`, disabling components – AOSP refuses them to the
+  shell user. The Android app can additionally hide apps as device owner.
+- Tested under Wine against a fake `adb` that behaves like OxygenOS 17 (freeze ignored, removal refused).
+- **Android app 0.3.1-alpha:** the buttons above the custom list wrap on narrow screens or large fonts instead of
+  squeezing "Export" into a vertical column.
+
 ## v0.9.7-beta — pre-release
 
 - **Menu 7: remove for the user when freezing is ignored.** On a real device `com.heytap.browser` answered

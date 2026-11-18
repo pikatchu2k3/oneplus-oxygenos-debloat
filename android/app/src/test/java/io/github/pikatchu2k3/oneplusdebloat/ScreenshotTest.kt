@@ -261,4 +261,12 @@ class ScreenshotTest {
     fun help_device_owner() = shot("17_help_device_owner") {
         HelpScreen(ready(), vm)
     }
+
+    /** Narrow phone, large font: the buttons above the custom list must wrap, not squeeze. */
+    @Test
+    @Config(qualifiers = "w360dp-h780dp-420dpi", fontScale = 1.3f)
+    fun apps_custom_large_font() = shot("18_apps_custom_large_font") {
+        val custom = listOf("com.oplus.games", "com.coloros.video", "net.oneplus.weather", browser)
+        AppsScreen(ready().copy(custom = custom), vm, 2, {}, {})
+    }
 }
