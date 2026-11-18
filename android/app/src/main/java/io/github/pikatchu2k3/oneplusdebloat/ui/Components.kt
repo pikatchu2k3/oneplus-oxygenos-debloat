@@ -74,6 +74,8 @@ fun StateChip(state: PkgState, modifier: Modifier = Modifier) {
         PkgState.ACTIVE -> Triple(t.stateActive, sc.warn, sc.onWarn)
         PkgState.FROZEN -> Triple(t.stateFrozen, sc.ok, sc.onOk)
         PkgState.REMOVED -> Triple(t.stateRemoved, scheme.tertiaryContainer, scheme.onTertiaryContainer)
+        PkgState.HIDDEN -> Triple(t.stateHidden, scheme.tertiaryContainer, scheme.onTertiaryContainer)
+        PkgState.SUSPENDED -> Triple(t.stateSuspended, scheme.secondaryContainer, scheme.onSecondaryContainer)
         PkgState.NOT_PRESENT -> Triple(t.stateNotPresent, scheme.surfaceVariant, scheme.onSurfaceVariant)
     }
     Pill(text, bg, fg, modifier)

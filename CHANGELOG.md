@@ -16,6 +16,22 @@
   - Home counters now show the real state of the phone (anything disabled or removed, whoever did it); new
     "Off" tab lists these packages for releasing or bringing back.
   - Help: how to start Shizuku from a PC over ADB, and why no one-time ADB permission grant exists.
+- **Android app 0.3.0-alpha – "Other ways" for apps the vendor will not let go.** Newer OxygenOS versions
+  ignore `pm disable-user` for some system apps *and* refuse `pm uninstall -k --user 0`
+  ("only root can delete system app for a particular user"). The app now offers **Other ways …** (detail view,
+  and in the result dialog after a failed freeze or removal). It tries, in order, and stops at the first step
+  that is confirmed by reading the state back:
+  1. remove for the user (as before),
+  2. **hide as device owner** (`DevicePolicyManager.setApplicationHidden`) – only if the app was set up as
+     device owner (Help → Device owner, or `adb shell dpm set-device-owner …`; needs no accounts and no second
+     user at set-up time; "Give up" unhides everything first),
+  3. **suspend** (`pm suspend` + force-stop + `RUN_ANY_IN_BACKGROUND`/`RUN_IN_BACKGROUND` ignored per package,
+     never per uid + standby bucket `restricted`). Weaker than freezing; shown as "suspended".
+  Each step's answer from the phone is shown. New states "hidden" and "suspended" appear in the lists and the
+  "Off" tab; release, "Reset everything", the post-update check and "Apply again" cover them. Undoing a
+  suspension made by someone else (e.g. Digital Wellbeing) only unsuspends and leaves their settings alone.
+  Deliberately not used: `pm disable-until-used`, `pm hide` and disabling single components – AOSP refuses all
+  three to the shell user, so they cannot work through Shizuku/adb. **Not tested on a device.**
 
 ## v0.9.7-beta — pre-release
 

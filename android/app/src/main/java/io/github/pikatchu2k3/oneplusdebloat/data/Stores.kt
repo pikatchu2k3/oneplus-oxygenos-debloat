@@ -21,10 +21,22 @@ class AndroidPackageSource(context: Context) : PackageSource {
     private val context: Context = context.applicationContext
     private val pm: PackageManager = context.applicationContext.packageManager
 
-    override fun stateOf(pkg: String): PkgState {
-        val info = infoOf(pkg) ?: return PkgState.NOT_PRESENT
+    override fun stateOf(pkg: String): PkgState = stateOf(infoOf(pkg))
+
+    fun stateOf(info: ApplicationInfo?): PkgState {
+        if (info == null) return PkgState.NOT_PRESENT
         if (info.flags and ApplicationInfo.FLAG_INSTALLED == 0) return PkgState.REMOVED
-        return if (info.enabled) PkgState.ACTIVE else PkgState.FROZEN
+        if (!info.enabled) return PkgState.FROZEN
+        if (info.flags and ApplicationInfo.FLAG_SUSPENDED != 0) return PkgState.SUSPENDED
+        // A hidden package is still "installed", but only shows up when uninstalled ones are included.
+        return if (isVisible(info.packageName)) PkgState.ACTIVE else PkgState.HIDDEN
+    }
+
+    private fun isVisible(pkg: String): Boolean = try {
+        pm.getApplicationInfo(pkg, 0)
+        true
+    } catch (_: PackageManager.NameNotFoundException) {
+        false
     }
 
     /** Also finds packages that were removed for the user but still sit in the system image. */
@@ -65,6 +77,8 @@ class AndroidPackageSource(context: Context) : PackageSource {
 private data class Saved(
     val frozen: Set<String> = emptySet(),
     val removed: Set<String> = emptySet(),
+    val hidden: Set<String> = emptySet(),
+    val neutralized: Set<String> = emptySet(),
     val custom: Set<String> = emptySet(),
     val log: List<String> = emptyList(),
 )
@@ -78,6 +92,8 @@ class AppStore(private val file: File) : Journal {
 
     override val frozen: Set<String> get() = saved.frozen
     override val removed: Set<String> get() = saved.removed
+    override val hidden: Set<String> get() = saved.hidden
+    override val neutralized: Set<String> get() = saved.neutralized
     val custom: Set<String> get() = saved.custom
     val log: List<String> get() = saved.log
 
@@ -85,6 +101,10 @@ class AppStore(private val file: File) : Journal {
     override fun unmarkFrozen(pkg: String) = update { it.copy(frozen = it.frozen - pkg) }
     override fun markRemoved(pkg: String) = update { it.copy(removed = it.removed + pkg) }
     override fun unmarkRemoved(pkg: String) = update { it.copy(removed = it.removed - pkg) }
+    override fun markHidden(pkg: String) = update { it.copy(hidden = it.hidden + pkg) }
+    override fun unmarkHidden(pkg: String) = update { it.copy(hidden = it.hidden - pkg) }
+    override fun markNeutralized(pkg: String) = update { it.copy(neutralized = it.neutralized + pkg) }
+    override fun unmarkNeutralized(pkg: String) = update { it.copy(neutralized = it.neutralized - pkg) }
 
     fun addCustom(pkgs: Collection<String>) = update { it.copy(custom = it.custom + pkgs) }
     fun removeCustom(pkg: String) = update { it.copy(custom = it.custom - pkg) }

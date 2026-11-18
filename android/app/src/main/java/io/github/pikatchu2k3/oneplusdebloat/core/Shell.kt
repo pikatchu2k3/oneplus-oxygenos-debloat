@@ -32,6 +32,18 @@ enum class PkgState {
 
     /** Disabled (`pm disable-user`), by this app or by anything else. */
     FROZEN,
+
+    /**
+     * Hidden for the user (device owner, `DevicePolicyManager.setApplicationHidden`). Like REMOVED:
+     * the app is gone for the user, the copy in the system and the data stay.
+     */
+    HIDDEN,
+
+    /**
+     * Suspended (`pm suspend`): installed and enabled, but it cannot be opened. Used as the last
+     * resort when the vendor blocks freezing and removing; Digital Wellbeing's "pause app" ends up here too.
+     */
+    SUSPENDED,
 }
 
 /** Read-only view of the installed packages. Works without any special rights. */
@@ -40,6 +52,17 @@ interface PackageSource {
 }
 
 private val PACKAGE_NAME = Regex("^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z0-9_]+)+$")
+
+/**
+ * Device owner rights of this app (`dpm set-device-owner`). A device owner may hide any app through
+ * the device policy API - a different code path from the shell commands that some vendors block.
+ */
+interface DeviceOwner {
+    val isOwner: Boolean
+
+    /** Hides or shows the package. Returns the system's reason on failure, null otherwise. */
+    fun setHidden(pkg: String, hidden: Boolean): String?
+}
 
 /** Package names are pasted into shell commands, so nothing else may get through. */
 fun isValidPackageName(name: String): Boolean = name.length <= 255 && PACKAGE_NAME.matches(name)

@@ -5,7 +5,7 @@ einfrieren, bei Bedarf für den Nutzer entfernen, Telemetrie-Dienste per App-Ops
 wieder zurücksetzen. Dazu kommen eine eigene Liste, Erklärungen zu jeder App und ein Status-Check
 nach System-Updates.
 
-**Stand: Etappe 1, auf keinem echten Gerät getestet.** Gebaut und mit Unit-Tests sowie
+**Stand: 0.3.0-alpha. Shizuku-Zugriff auf einem Gerät bestätigt; „Andere Wege“ und Geräteinhaber ungetestet.** Gebaut und mit Unit-Tests sowie
 Screenshot-Tests auf der JVM geprüft.
 
 ## Zugriffswege
@@ -59,6 +59,29 @@ gehört ein eigener, geheimer Schlüssel her; danach ist einmalig eine Neuinstal
   und drei Systembausteine bleiben gesperrt (`"locked": true` im Katalog, festgelegt in `tools/gen_app_catalog.py`).
 - **Aus** – alles, was auf dem Telefon deaktiviert oder für den Nutzer entfernt ist, egal wodurch. Daraus speisen
   sich auch die Zähler der Startseite.
+
+## Wenn der Hersteller Einfrieren und Entfernen sperrt
+
+Neuere OxygenOS-Versionen ignorieren `pm disable-user` bei manchen System-Apps („new state: default“) und
+lehnen `pm uninstall -k --user 0` ab („only root can delete system app for a particular user“). Dafür gibt es
+**„Andere Wege …“** (App-Ansicht und Ergebnis-Dialog). Die App probiert der Reihe nach und hört beim ersten
+Schritt auf, der nach dem Zurücklesen wirklich gewirkt hat:
+
+1. **Für den Nutzer entfernen** (`pm uninstall -k --user 0`) – wie bisher.
+2. **Als Geräteinhaber verstecken** (`DevicePolicyManager.setApplicationHidden`) – nur, wenn die App
+   Geräteinhaber ist. Einrichten unter Hilfe → Geräteinhaber oder am PC:
+   `adb shell dpm set-device-owner --user 0 io.github.pikatchu2k3.oneplusdebloat/.data.OwnerReceiver`.
+   Android verlangt dafür beim Einrichten: kein angemeldetes Konto, kein zweiter Nutzer, kein Arbeitsprofil,
+   keine geklonten Apps (Konten dürfen danach wieder hinzu). Nur ein Geräteinhaber pro Telefon.
+   „Abgeben“ holt zuerst alle versteckten Apps zurück.
+3. **Stilllegen** – `pm suspend`, `am force-stop`, `RUN_ANY_IN_BACKGROUND`/`RUN_IN_BACKGROUND` auf `ignore`
+   (nur je Paket, nie je UID – viele Hersteller-Apps teilen sich die System-UID), Standby-Stufe
+   `restricted`. Schwächer als Einfrieren: Die App lässt sich nicht öffnen und startet nicht von selbst, das
+   System kann sie aber kurz binden.
+
+Bewusst nicht dabei: `pm disable-until-used`, `pm hide` und das Abschalten einzelner Komponenten. AOSP
+erlaubt der Shell nur ENABLED/DISABLED_USER für ganze Pakete und verlangt für `hide` MANAGE_USERS – über
+Shizuku-als-ADB können diese Wege nie klappen. Ob Schritt 2 die OnePlus-Sperre umgeht, ist **ungetestet**.
 
 ## Bewusst anders als das Skript
 

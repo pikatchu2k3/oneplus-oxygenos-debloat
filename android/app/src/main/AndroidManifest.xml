@@ -24,6 +24,22 @@
             </intent-filter>
         </activity>
 
+        <!--
+            Optional device owner (set up by the user with "dpm set-device-owner"). Only used to hide
+            apps the vendor will not let freeze or remove. No policies are requested.
+        -->
+        <receiver
+            android:name=".data.OwnerReceiver"
+            android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+
         <!-- Shizuku hands its binder to the app through this provider. -->
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
