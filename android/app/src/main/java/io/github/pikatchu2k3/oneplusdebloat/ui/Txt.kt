@@ -62,7 +62,7 @@ interface Txt {
     val exportList: String
     val pickerTitle: String
     val pickerIntro: String
-    val showSystemApps: String
+    fun pickerSource(s: PickerSource, n: Int): String
     fun pickerFilter(f: PickerFilter, n: Int): String
     fun addCount(n: Int): String
     val manualAddTitle: String
@@ -269,7 +269,11 @@ object De : Txt {
     override val exportList = "Exportieren"
     override val pickerTitle = "Apps hinzufügen"
     override val pickerIntro = "Wähle Apps für deine eigene Liste. Hinzufügen ändert noch nichts – eingefroren wird erst, wenn du es in der Liste auslöst."
-    override val showSystemApps = "System-Apps anzeigen"
+    override fun pickerSource(s: PickerSource, n: Int) = when (s) {
+        PickerSource.ALL -> "Alle Apps"
+        PickerSource.USER -> "Nur eigene Apps"
+        PickerSource.SYSTEM -> "Nur System-Apps"
+    } + " ($n)"
     override fun pickerFilter(f: PickerFilter, n: Int) = when (f) {
         PickerFilter.ALL -> "Alle"
         PickerFilter.ACTIVE -> "Aktiv"
@@ -650,7 +654,11 @@ object En : Txt {
     override val exportList = "Export"
     override val pickerTitle = "Add apps"
     override val pickerIntro = "Choose apps for your own list. Adding changes nothing yet – freezing only happens when you start it from the list."
-    override val showSystemApps = "Show system apps"
+    override fun pickerSource(s: PickerSource, n: Int) = when (s) {
+        PickerSource.ALL -> "All apps"
+        PickerSource.USER -> "Only your apps"
+        PickerSource.SYSTEM -> "Only system apps"
+    } + " ($n)"
     override fun pickerFilter(f: PickerFilter, n: Int) = when (f) {
         PickerFilter.ALL -> "All"
         PickerFilter.ACTIVE -> "Active"
